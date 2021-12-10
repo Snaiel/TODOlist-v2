@@ -90,12 +90,16 @@ class Window(QMainWindow):
 
     def create_task(self):
         task_name, ok = QInputDialog.getText(self, 'add task', 'enter name of task')
-        if ok:
+        if ok and task_name != '':
             task = QCheckBox(task_name)
             task.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
             self.scrollAreaLayout.addWidget(task)
 
     def create_section(self):
+        section_name, ok = QInputDialog.getText(self, 'add task', 'enter name of task')
+        if not ok or section_name == '':
+            return
+
         section = QWidget()
         sectionLayout = QVBoxLayout()
         sectionLayout.setContentsMargins(0, 0, 0, 0)
@@ -112,7 +116,7 @@ class Window(QMainWindow):
         toggleIcon.setIndent(0)
         sectionHeaderLayout.addWidget(toggleIcon, stretch=1)
 
-        sectionName = QLabel('Section')
+        sectionName = QLabel(section_name)
         sectionName.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         sectionHeaderLayout.addWidget(sectionName, stretch=10)
 

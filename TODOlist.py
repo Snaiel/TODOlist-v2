@@ -88,15 +88,33 @@ class Window(QMainWindow):
 
         self.generalLayout.addLayout(self.addButtonsLayout)
 
+    def taskClicked(self, **kwargs):
+        if kwargs['event'].button() == 1:
+            kwargs['task'].click()
+        if kwargs['event'].button() == 2:
+            kwargs['task_right_click'].popup(kwargs['pos'])
+
+    def sectionClicked(self, **kwargs):
+        if kwargs['event'].button() == 1:
+            self._toggle_section(kwargs['toggle_icon'], kwargs['section_body'])
+        elif kwargs['event'].button() == 2:
+            kwargs['section_right_click'].popup(kwargs['pos'])
+
     def create_task(self):
         task_name, ok = QInputDialog.getText(self, 'add task', 'enter name of task')
         if ok and task_name != '':
             task = QCheckBox(task_name)
+
+            taskRightClick = QMenu()
+            taskRightClick.addAction('Rename')
+            taskRightClick.addAction('Delete')
+
+            task.mouseReleaseEvent = lambda event, task_right_click=taskRightClick: self.taskClicked(event=event, task=task, task_right_click=task_right_click, pos=event.globalPos())
             task.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
             self.scrollAreaLayout.addWidget(task)
 
     def create_section(self):
-        section_name, ok = QInputDialog.getText(self, 'add task', 'enter name of task')
+        section_name, ok = QInputDialog.getText(self, 'add section', 'enter name of section')
         if not ok or section_name == '':
             return
 
@@ -128,10 +146,13 @@ class Window(QMainWindow):
         sectionBodyLayout.setContentsMargins(20, 5, 20, 5)
 
         sectionBodyLayout.addWidget(QCheckBox('Quest'))
-
         sectionBody.setLayout(sectionBodyLayout)
 
-        sectionHeader.mouseReleaseEvent = lambda event, toggle_icon=toggleIcon, section_body=sectionBody: self._toggle_section(event, toggle_icon, section_body)
+        sectionRightClick = QMenu()
+        sectionRightClick.addAction('Rename')
+        sectionRightClick.addAction('Delete')
+
+        sectionHeader.mouseReleaseEvent = lambda event, section_right_click=sectionRightClick, toggle_icon=toggleIcon, section_body=sectionBody: self.sectionClicked(event=event, section_right_click=section_right_click, toggle_icon=toggle_icon, section_body=section_body, pos=event.globalPos())
 
         sectionLayout.addWidget(sectionHeader)
         sectionLayout.addWidget(sectionBody)
@@ -139,7 +160,7 @@ class Window(QMainWindow):
 
         self.scrollAreaLayout.addWidget(section)
 
-    def _toggle_section(self, event, toggle_icon, section_body):
+    def _toggle_section(self, toggle_icon, section_body):
         # print('toggle', event.button(), section_body.hide())
         if section_body.isVisible():
             section_body.hide()
@@ -148,6 +169,9 @@ class Window(QMainWindow):
         else:
             section_body.show()
             toggle_icon.setText('▼')
+
+    def rename_task(self, task, new_name):
+        pass
 
 
 class Model:

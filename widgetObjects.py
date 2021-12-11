@@ -59,6 +59,10 @@ class Section(QWidget):
             return
         self.sectionBody.sectionBodyLayout.addWidget(eval(f'{type}(element_name)'))
 
+    def delete_element(self, type):
+        self.setParent(None)
+        self.deleteLater()
+
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
         print(action.text())

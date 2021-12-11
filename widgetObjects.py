@@ -1,7 +1,8 @@
 from PyQt5 import QtGui
 from PyQt5.QtGui import QColor, QMouseEvent, QPalette
-from PyQt5.QtCore import QEvent, QSize, Qt
+from PyQt5.QtCore import QEvent, QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import *
+
 
 class Task(QCheckBox):
     def __init__(self, task_name):
@@ -26,27 +27,20 @@ class Section(QWidget):
         self.sectionLayout = QVBoxLayout()
         self.sectionLayout.setContentsMargins(0, 0, 0, 0)
 
-        # Header
         self.sectionHeader = self.SectionHeader(section_name)
+        self.sectionBody = self.SectionBody()
 
-        # Body
-        self.sectionBody = QWidget()
-        self.sectionBodyLayout = QVBoxLayout()
-        self.sectionBodyLayout.setContentsMargins(20, 5, 20, 5)
-
-        self.sectionBodyLayout.addWidget(QCheckBox('Quest'))
-        self.sectionBody.setLayout(self.sectionBodyLayout)
-
-        self.sectionRightClick = QMenu()
-        self.sectionRightClick.addAction('Rename')
-        self.sectionRightClick.addAction('Delete')
-
-        # self.sectionHeader.mouseReleaseEvent = lambda event, section_right_click=sectionRightClick, toggle_icon=toggleIcon, section_body=sectionBody: self.sectionClicked(event=event, section_right_click=section_right_click, toggle_icon=toggle_icon, section_body=section_body, pos=event.globalPos())
+        self.sectionRightClick = self.SectionRightClick()
 
         self.sectionLayout.addWidget(self.sectionHeader)
         self.sectionLayout.addWidget(self.sectionBody)
         self.setLayout(self.sectionLayout)
 
+        self.sectionBody.hide()
+
+        self.sectionRightClick.triggered.connect(self.right_click_menu_clicked)
+
+        # self.sectionRightClick.installEventFilter(self)
         self.sectionHeader.installEventFilter(self)
 
     def _toggle_section(self, toggle_icon, section_body):
@@ -58,8 +52,28 @@ class Section(QWidget):
             section_body.show()
             toggle_icon.setText('▼')
 
+    def add_element(self, type):
+        print('add element', type)
+        element_name, ok = QInputDialog.getText(self, f'add {type.lower()}', f'enter name of {type.lower()}')
+        if not ok or element_name == '':
+            return
+        self.sectionBody.sectionBodyLayout.addWidget(eval(f'{type}(element_name)'))
+
+    @pyqtSlot(QAction)
+    def right_click_menu_clicked(self, action):
+        print(action.text())
+
+        switch_case_dict = {
+            'Task': self.add_element,
+            'Section': self.add_element
+        }
+
+        switch_case_dict[action.text()](action.text())
+
+
     def eventFilter(self, object, event):
-        if event.type() == QMouseEvent.MouseButtonRelease:
+        # print(object, event, event.type())
+        if isinstance(object, self.SectionHeader) and event.type() == QMouseEvent.MouseButtonRelease:
             if event.button() == 1:
                 if self.sectionBody.isVisible():
                     self.sectionBody.hide()
@@ -72,8 +86,11 @@ class Section(QWidget):
             elif event.button() == 2:
                 self.sectionRightClick.popup(event.globalPos())
             return True
-        else:
-            return False
+
+        if isinstance(object, self.SectionRightClick):
+            print(object.menuAction().text())
+
+        return False
 
     class SectionHeader(QWidget):
         def __init__(self, section_name):
@@ -94,8 +111,23 @@ class Section(QWidget):
 
             self.setLayout(self.sectionHeaderLayout)
 
-        # def mouseReleaseEvent(self, e: QtGui.QMouseEvent) -> None:
-        #     if e.button() == 1:
-        #         self._toggle_section(kwargs['toggle_icon'], kwargs['section_body'])
-        #     elif e.button() == 2:
-        #         kwargs['section_right_click'].popup(kwargs['pos'])
+    class SectionBody(QWidget):
+        def __init__(self):
+            super().__init__()
+
+            self.sectionBodyLayout = QVBoxLayout()
+            self.sectionBodyLayout.setContentsMargins(20, 5, 20, 5)
+
+            # self.sectionBodyLayout.addWidget(QCheckBox('Quest'))
+            self.setLayout(self.sectionBodyLayout)
+
+    class SectionRightClick(QMenu):
+        def __init__(self):
+            super().__init__()
+
+            addMenu = self.addMenu('Add',)
+            addMenu.addAction('Task')
+            addMenu.addAction('Section')
+            self.addAction('Rename')
+            self.addAction('Delete')
+

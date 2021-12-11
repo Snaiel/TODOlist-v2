@@ -84,21 +84,35 @@ class Window(QMainWindow):
         self.addButtonsLayout.addWidget(self.addTaskButton)
         self.addButtonsLayout.addWidget(self.addSectionButton)
 
-        self.addTaskButton.clicked.connect(self.create_task)
-        self.addSectionButton.clicked.connect(self.create_section)
+        self.addTaskButton.clicked.connect(lambda: self.create_element('Task'))
+        self.addSectionButton.clicked.connect(lambda: self.create_element('Section'))
 
         self.generalLayout.addLayout(self.addButtonsLayout)
 
-    def create_task(self):
-        task_name, ok = QInputDialog.getText(self, 'add task', 'enter name of task')
-        if ok and task_name != '':
-            self.scrollAreaLayout.addWidget(Task(task_name))
-
-    def create_section(self):
-        section_name, ok = QInputDialog.getText(self, 'add section', 'enter name of section')
-        if not ok or section_name == '':
+    def create_element(self, type):
+        print('add element', type)
+        element_name, ok = QInputDialog.getText(self, f'add {type.lower()}', f'enter name of {type.lower()}')
+        if not ok or element_name == '':
             return
-        self.scrollAreaLayout.addWidget(Section(section_name))
+
+        element = eval(f'{type}(element_name)')
+        self.scrollAreaLayout.addWidget(element)
+        eval(f'element.{type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
+
+    def delete_element(self, action):
+        parent_widget = action.parentWidget().parentWidget()
+        print(parent_widget)
+        self.scrollAreaLayout.removeWidget(parent_widget)
+        parent_widget.deleteLater()
+
+    def right_click_menu_clicked(self, action):
+        print(action.text())
+        switch_case_dict = {
+            'Delete': self.delete_element
+        }
+
+        if action.text() in switch_case_dict:
+            switch_case_dict[action.text()](action)
 
 
 class Model:

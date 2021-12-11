@@ -10,7 +10,7 @@ class Task(QCheckBox):
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
-        self.taskRightClick = QMenu()
+        self.taskRightClick = QMenu(self)
         self.taskRightClick.addAction('Rename')
         self.taskRightClick.addAction('Delete')
 
@@ -30,7 +30,7 @@ class Section(QWidget):
         self.sectionHeader = self.SectionHeader(section_name)
         self.sectionBody = self.SectionBody()
 
-        self.sectionRightClick = self.SectionRightClick()
+        self.sectionRightClick = self.SectionRightClick(self)
 
         self.sectionLayout.addWidget(self.sectionHeader)
         self.sectionLayout.addWidget(self.sectionBody)
@@ -52,27 +52,35 @@ class Section(QWidget):
             section_body.show()
             toggle_icon.setText('▼')
 
-    def add_element(self, type):
+    def create_element(self, action):
+        type = action.text()
         print('add element', type)
         element_name, ok = QInputDialog.getText(self, f'add {type.lower()}', f'enter name of {type.lower()}')
         if not ok or element_name == '':
             return
-        self.sectionBody.sectionBodyLayout.addWidget(eval(f'{type}(element_name)'))
+        # self.sectionBody.sectionBodyLayout.addWidget(eval(f'{type}(element_name)'))
 
-    def delete_element(self, type):
-        self.setParent(None)
-        self.deleteLater()
+        element = eval(f'{type}(element_name)')
+        self.sectionBody.sectionBodyLayout.addWidget(element)
+        eval(f'element.{type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
+
+    def delete_element(self, action):
+        parent_widget = action.parentWidget().parentWidget()
+        print(parent_widget)
+        self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)
+        parent_widget.deleteLater()
 
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
         print(action.text())
 
         switch_case_dict = {
-            'Task': self.add_element,
-            'Section': self.add_element
+            'Task': self.create_element,
+            'Section': self.create_element,
+            'Delete': self.delete_element
         }
 
-        switch_case_dict[action.text()](action.text())
+        switch_case_dict[action.text()](action)
 
 
     def eventFilter(self, object, event):
@@ -126,8 +134,8 @@ class Section(QWidget):
             self.setLayout(self.sectionBodyLayout)
 
     class SectionRightClick(QMenu):
-        def __init__(self):
-            super().__init__()
+        def __init__(self, parent):
+            super().__init__(parent)
 
             addMenu = self.addMenu('Add',)
             addMenu.addAction('Task')

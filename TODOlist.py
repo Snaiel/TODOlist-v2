@@ -87,20 +87,28 @@ class Window(QMainWindow):
         self.addButtonsLayout.addWidget(self.addTaskButton)
         self.addButtonsLayout.addWidget(self.addSectionButton)
 
-        self.addTaskButton.clicked.connect(lambda: self.create_element('Task'))
-        self.addSectionButton.clicked.connect(lambda: self.create_element('Section'))
+        self.addTaskButton.clicked.connect(lambda: self.create_element(type='Task'))
+        self.addSectionButton.clicked.connect(lambda: self.create_element(type='Section'))
 
         self.generalLayout.addLayout(self.addButtonsLayout)
 
-    def create_element(self, type):
-        print('add element', type)
-        element_name, ok = QInputDialog.getText(self, f'add {type.lower()}', f'enter name of {type.lower()}')
+    def create_element(self, **kwargs):
+        type_of_element = kwargs['type'] if 'type' in kwargs else kwargs['action'].text()
+        element_name, ok = QInputDialog.getText(self, f"add {type_of_element.lower()}", f"enter name of {type_of_element.lower()}")
+        
         if not ok or element_name == '':
             return
 
-        element = eval(f'{type}(element_name)')
-        self.scrollAreaLayout.addWidget(element)
-        eval(f'element.{type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
+        element = eval(f"{type_of_element}(element_name)")
+        if 'action' in kwargs:
+            action = kwargs['action']
+            index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
+            self.scrollAreaLayout.insertWidget(index+1, element)
+        else:
+            self.scrollAreaLayout.addWidget(element)
+
+        # Listen for when an action in the element's menu is triggered
+        eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
 
     def delete_element(self, action):
         parent_widget = action.parentWidget().parentWidget()
@@ -110,12 +118,14 @@ class Window(QMainWindow):
 
     def right_click_menu_clicked(self, action):
         switch_case_dict = {
-            'Delete': self.delete_element
+            'Delete': self.delete_element,
+            'Task': self.create_element,
+            'Section': self.create_element
         }
 
         if action.text() in switch_case_dict:
             print(action.text())
-            switch_case_dict[action.text()](action)
+            switch_case_dict[action.text()](action=action)
 
 
 class Model:

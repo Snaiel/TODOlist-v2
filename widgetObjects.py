@@ -27,7 +27,7 @@ class Task(QCheckBox):
 
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
-        print(action.text())
+        print(action.text(), action.parentWidget().title())
 
         switch_case_dict = {
             'Rename': self.rename
@@ -40,9 +40,10 @@ class Task(QCheckBox):
         def __init__(self, parent):
             super().__init__(parent)
 
-            addMenu = self.addMenu('Add',)
+            addMenu = self.addMenu('Add')
             addMenu.addAction('Task')
             addMenu.addAction('Section')
+
             self.addAction('Rename')
             self.addAction('Delete')
 

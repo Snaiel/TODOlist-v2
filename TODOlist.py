@@ -1,5 +1,3 @@
-# Filename: main_window.py
-"""Main Window-Style application."""
 import sys
 from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QSize, Qt
@@ -53,6 +51,11 @@ class Window(QMainWindow):
     def _createMenu(self):
         self.menu = self.menuBar().addMenu("&Menu")
         self.menu.addAction('&Exit', self.close)
+
+        self.menu = self.menuBar().addMenu("&Add")
+        self.menu.addAction('&Task', lambda: self.create_element('Task'))
+        self.menu.addAction('&Section', lambda: self.create_element('Section'))
+        self.menu.addAction('&List')
 
     def _createComboBox(self):
         self.combo = QComboBox()

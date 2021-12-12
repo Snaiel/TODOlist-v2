@@ -10,15 +10,41 @@ class Task(QCheckBox):
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
-        self.taskRightClick = QMenu(self)
-        self.taskRightClick.addAction('Rename')
-        self.taskRightClick.addAction('Delete')
+        self.taskRightClick = self.TaskRightClick(self)
+        self.taskRightClick.triggered.connect(self.right_click_menu_clicked)
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         if e.button() == 1:
             self.click()
         if e.button() == 2:
             self.taskRightClick.popup(e.globalPos())
+
+    def rename(self, action):
+        new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name')
+        if not ok or new_name == '':
+            return
+        self.setText(new_name)
+
+    @pyqtSlot(QAction)
+    def right_click_menu_clicked(self, action):
+        print(action.text())
+
+        switch_case_dict = {
+            'Rename': self.rename
+        }
+        
+        if action.text() in switch_case_dict:
+            switch_case_dict[action.text()](action)
+
+    class TaskRightClick(QMenu):
+        def __init__(self, parent):
+            super().__init__(parent)
+
+            addMenu = self.addMenu('Add',)
+            addMenu.addAction('Task')
+            addMenu.addAction('Section')
+            self.addAction('Rename')
+            self.addAction('Delete')
 
 class Section(QWidget): 
     def __init__(self, section_name):
@@ -62,9 +88,15 @@ class Section(QWidget):
 
         element = eval(f'{type}(element_name)')
         self.sectionBody.sectionBodyLayout.addWidget(element)
-        eval(f'element.{type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
+        eval(f'element.{type.lower()}RightClick.triggered.connect(self.delete_child_element)')
 
-    def delete_element(self, action):
+    def rename(self, action):
+        new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name')
+        if not ok or new_name == '':
+            return
+        self.sectionHeader.sectionName.setText(new_name)
+
+    def delete_child_element(self, action):
         parent_widget = action.parentWidget().parentWidget()
         print(parent_widget)
         self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)
@@ -77,11 +109,22 @@ class Section(QWidget):
         switch_case_dict = {
             'Task': self.create_element,
             'Section': self.create_element,
-            'Delete': self.delete_element
+            'Rename': self.rename
         }
 
-        switch_case_dict[action.text()](action)
+        if action.text() in switch_case_dict:
+            switch_case_dict[action.text()](action)
 
+    @pyqtSlot(QAction)
+    def child_menu_clicked(self, action):
+        print(action.text())
+
+        switch_case_dict = {
+            'Delete': self.delete_child_element
+        }
+
+        if action.text() in switch_case_dict:
+            switch_case_dict[action.text()](action)
 
     def eventFilter(self, object, event):
         # print(object, event, event.type())

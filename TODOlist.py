@@ -106,12 +106,12 @@ class Window(QMainWindow):
         parent_widget.deleteLater()
 
     def right_click_menu_clicked(self, action):
-        print(action.text())
         switch_case_dict = {
             'Delete': self.delete_element
         }
 
         if action.text() in switch_case_dict:
+            print(action.text())
             switch_case_dict[action.text()](action)
 
 

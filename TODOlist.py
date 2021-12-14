@@ -94,7 +94,7 @@ class Window(QMainWindow):
 
     def create_element(self, **kwargs):
         type_of_element = kwargs['type'] if 'type' in kwargs else kwargs['action'].text()
-        element_name, ok = QInputDialog.getText(self, f"add {type_of_element.lower()}", f"enter name of {type_of_element.lower()}")
+        element_name, ok = QInputDialog.getText(self, f"create {type_of_element.lower()}", f"enter name of {type_of_element.lower()}")
         
         if not ok or element_name == '':
             return
@@ -102,8 +102,13 @@ class Window(QMainWindow):
         element = eval(f"{type_of_element}(element_name)")
         if 'action' in kwargs:
             action = kwargs['action']
-            index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
-            self.scrollAreaLayout.insertWidget(index+1, element)
+            # index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
+            index = self.scrollAreaLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
+
+            # print(action.parentWidget().parentWidget().add_menu.actions()[3].isChecked())
+            insert_position = 0 if action.parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
+
+            self.scrollAreaLayout.insertWidget(index + insert_position, element)
         else:
             self.scrollAreaLayout.addWidget(element)
 
@@ -123,7 +128,7 @@ class Window(QMainWindow):
             'Section': self.create_element
         }
 
-        if action.text() in switch_case_dict:
+        if action is not None and action.text() in switch_case_dict and action.parentWidget().title() == 'Insert':
             print(action.text())
             switch_case_dict[action.text()](action=action)
 

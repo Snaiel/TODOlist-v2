@@ -2,16 +2,19 @@ import sys
 from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import *
-from widgetObjects import Section, Task
+import widgetObjects
+import dataObjects
 
 class Window(QMainWindow):
     """Main Window."""
-    def __init__(self, controller):
+    def __init__(self, model):
         """Initializer."""
         super().__init__()
 
-        self.controller = controller
+        self.model = model
+
         self._init_ui()
+        self.import_data()
         
 
     def _init_ui(self):
@@ -26,7 +29,7 @@ class Window(QMainWindow):
 
         self._createMenu()
         self._createComboBox()
-        self._createScrollArea()
+        self._createScrollAreaRow()
         self._createAddButtons()
 
         self._darkMode()
@@ -59,24 +62,15 @@ class Window(QMainWindow):
 
     def _createComboBox(self):
         self.combo = QComboBox()
-        self.combo.addItem('Organote')
-        self.combo.addItem('Endless Exile')
+        self.combo.activated.connect(lambda index: self.change_focus(index))
         self.generalLayout.addWidget(self.combo)
 
-    def _createScrollArea(self):
-        self.scrollAreaBody = QWidget()
-        self.scrollArea = QScrollArea()
+    def _createScrollAreaRow(self):
+        self.scrollAreaRow = QWidget()
+        self.scrollAreaRowLayout = QHBoxLayout(self.scrollAreaRow)
+        self.scrollAreaRowLayout.setContentsMargins(0,0,0,0)
 
-        self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-
-        self.scrollAreaLayout = QVBoxLayout()
-        self.scrollAreaLayout.setAlignment(Qt.AlignmentFlag.AlignTop) 
-
-        self.scrollAreaBody.setLayout(self.scrollAreaLayout)
-        self.scrollArea.setWidget(self.scrollAreaBody)
-
-        self.generalLayout.addWidget(self.scrollArea)
+        self.generalLayout.addWidget(self.scrollAreaRow)
 
     def _createAddButtons(self):
         self.addButtonsLayout = QHBoxLayout()
@@ -92,6 +86,37 @@ class Window(QMainWindow):
 
         self.generalLayout.addLayout(self.addButtonsLayout)
 
+    def add_combo_items(self, items, focused):
+        self.combo.addItems(items)
+        self.combo.setCurrentText(focused)
+
+    def add_lists(self, data, focused):
+        for todolist in data:
+            self.scrollAreaRowLayout.addWidget(widgetObjects.List(str(todolist), True if str(todolist) == focused else False))
+
+    def import_data(self):
+        self.add_combo_items(self.model.get_list_names(), self.model.app_data['focused'])
+        self.add_lists(self.model.data, self.model.app_data['focused'])
+        self.set_focused_list(self.model.app_data['focused'])
+        
+
+    def set_focused_list(self, focused):
+        lists = self.scrollAreaRow.children()[1:]
+        for list in lists:
+            if list.list_name == focused:
+                self.focused_list = list
+                return
+        else:
+            self.focused_list = None
+
+    def change_focus(self, index):
+        lists = self.scrollAreaRow.children()[1:]
+        for list in lists:
+            list.setVisible(lists.index(list) == index)
+            if lists.index(list) == index:
+                self.focused_list = list
+        
+
     def create_element(self, **kwargs):
         type_of_element = kwargs['type'] if 'type' in kwargs else kwargs['action'].text()
         element_name, ok = QInputDialog.getText(self, f"create {type_of_element.lower()}", f"enter name of {type_of_element.lower()}")
@@ -99,20 +124,20 @@ class Window(QMainWindow):
         if not ok or element_name == '':
             return
 
-        element = eval(f"{type_of_element}(element_name)")
+        element = eval(f"widgetObjects.{type_of_element}(element_name)")
         if 'action' in kwargs:
             action = kwargs['action']
             # index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
-            index = self.scrollAreaLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
+            index = self.focused_list.scrollAreaLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
 
             # print(action.parentWidget().parentWidget().add_menu.actions()[3].isChecked())
             insert_position = 0 if action.parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
 
-            self.scrollAreaLayout.insertWidget(index + insert_position, element)
+            self.focused_list.scrollAreaLayout.insertWidget(index + insert_position, element)
         else:
-            self.scrollAreaLayout.addWidget(element)
+            self.focused_list.scrollAreaLayout.addWidget(element)
 
-        # Listen for when an action in the element's menu is triggered
+        ## Listen for when an action in the element's menu is triggered
         eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
 
     def delete_element(self, action):
@@ -134,22 +159,37 @@ class Window(QMainWindow):
 
 
 class Model:
-    def __init__(self, controller) -> None:
-        self.data = []
-        self.controller = controller
+    def __init__(self) -> None:
+        self.data = [dataObjects.List('Project 1'), dataObjects.List('Side Project')]
+        self.app_data = {
+            'focused': 'Side Project'
+        }
+
+    def get_list_names(self):
+        return [str(i) for i in self.data]
 
 class Controller:
-    pass
+    def __init__(self, model, view) -> None:
+        self.model = model # type: Model
+        self.view = view # type: Window
+
+        
+
+        self.view.add_combo_items(self.model.get_list_names(), self.model.app_data['focused'])
+        self.view.import_data(self.model.data, self.model.app_data['focused'])
+        self.view.set_focused_list(self.model.app_data['focused'])
+
+        self.view.show()
 
 class TODOlistApplication():
     def __init__(self) -> None:
         self.app = QApplication(sys.argv)
         self.app.setStyle("Fusion")
 
-        self.controller = Controller()
 
-        self.model = Model(self.controller)
-        self.view = Window(self.controller)
+        self.model = Model()
+        self.view = Window(self.model)
+
         self.view.show()
 
     def run(self):

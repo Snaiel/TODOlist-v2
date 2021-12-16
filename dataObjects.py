@@ -1,13 +1,16 @@
-class TODOlist:
+class List:
     def __init__(self, list_name) -> None:
         self.list_name = list_name
-        self.list_data = {}
+        self.list_data = []
 
     def rename_list(self, new_name):
         self.list_name = new_name
 
     def clear_list(self):
-        self.list_data = {}
+        self.list_data = []
+
+    def __str__(self) -> str:
+        return self.list_name
 
 class Section:
     def __init__(self, section_name, section_data) -> None:

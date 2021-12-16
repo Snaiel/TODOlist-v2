@@ -3,8 +3,36 @@ from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QEvent, QObject, QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import *
 
+class List(QScrollArea):
+    '''
+    A QScrollArea that will hold the Tasks and Sections of a given 'list' or 'project'
+    '''
+
+    def __init__(self, name, focused):
+        super().__init__()
+
+        self.list_name = name
+        self.focused = focused
+
+        if not focused:
+            self.hide()
+
+        self.scrollAreaBody = QWidget()
+
+        self.setWidgetResizable(True)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+
+        self.scrollAreaLayout = QVBoxLayout()
+        self.scrollAreaLayout.setAlignment(Qt.AlignmentFlag.AlignTop) 
+
+        self.scrollAreaBody.setLayout(self.scrollAreaLayout)
+        self.setWidget(self.scrollAreaBody)
 
 class Task(QCheckBox):
+    '''
+    A QCheckBox that signifies a single task
+    '''
+
     def __init__(self, task_name):
         super().__init__(task_name)
 
@@ -42,9 +70,9 @@ class Task(QCheckBox):
 
         # Prevent menu closing when selecting 'Before'/ 'After'
         if event is not None and event.type() == QMouseEvent.MouseButtonPress:
-            # print(object, event)
-            # print('hello')
-            object.actionAt(event.pos()).trigger()
+            action = object.actionAt(event.pos())
+            if isinstance(action, QAction):
+                action.trigger()
             return True
         return False
 
@@ -83,7 +111,10 @@ class Task(QCheckBox):
 
                 
 
-class Section(QWidget): 
+class Section(QWidget):
+    '''
+    A Custom widget that holds tasks or sections. The visibility of the body can be toggled by clicking on the section header.
+    '''
     def __init__(self, section_name):
         super().__init__()
 
@@ -205,7 +236,9 @@ class Section(QWidget):
         # Prevent menu from closing when changing 'Placement' option
         if isinstance(object, QMenu):
             if event.type() == QMouseEvent.MouseButtonPress:
-                object.actionAt(event.pos()).trigger()
+                action = object.actionAt(event.pos())
+                if isinstance(action, QAction):
+                    action.trigger()
                 return True
 
         return False

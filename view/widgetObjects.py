@@ -8,11 +8,12 @@ class List(QScrollArea):
     A QScrollArea that will hold the Tasks and Sections of a given 'list' or 'project'
     '''
 
-    def __init__(self, name, focused):
+    def __init__(self, name, focused, data):
         super().__init__()
 
         self.list_name = name
         self.focused = focused
+        data = data
 
         if not focused:
             self.hide()
@@ -28,15 +29,69 @@ class List(QScrollArea):
         self.scrollAreaBody.setLayout(self.scrollAreaLayout)
         self.setWidget(self.scrollAreaBody)
 
+        self.create_imported_data(data)
+
+    def create_section_from_data(self, data):
+        section = self.create_element(type='Section', name=data[0][0], state=data[0][1])
+        for element in data[1]:
+            if isinstance(element[0], str):
+                print(element)
+                section.create_element(type='Task', name=element[0], state=element[1])
+            else:
+                self.create_section_from_data(element)
+
+
+    def create_imported_data(self, data):
+        for element in data:
+            if isinstance(element[0], str):
+                self.create_element(type='Task', name=element[0], state=element[1])
+            else:
+                self.create_section_from_data(element)
+
+    def create_element(self, **kwargs):
+        if 'state' not in kwargs:
+            type_of_element = kwargs['type'] if 'type' in kwargs else kwargs['action'].text()
+            element_name, ok = QInputDialog.getText(self, f"create {type_of_element.lower()}", f"enter name of {type_of_element.lower()}")
+            state=False
+            
+            if not ok or element_name == '':
+                return
+        else:
+            type_of_element = kwargs['type']
+            element_name = kwargs['name']
+            state = kwargs['state']
+
+        element = eval(f"{type_of_element}(element_name, state)")
+        if 'action' in kwargs:
+            action = kwargs['action']
+            # index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
+            index = self.scrollAreaLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
+
+            # print(action.parentWidget().parentWidget().add_menu.actions()[3].isChecked())
+            insert_position = 0 if action.parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
+
+            self.scrollAreaLayout.insertWidget(index + insert_position, element)
+        else:
+            self.scrollAreaLayout.addWidget(element)
+
+        ## Listen for when an action in the element's menu is triggered
+        eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
+
+        return element
+
+    def right_click_menu_clicked(self, action):
+        pass
+
 class Task(QCheckBox):
     '''
     A QCheckBox that signifies a single task
     '''
 
-    def __init__(self, task_name):
+    def __init__(self, task_name, checked=False):
         super().__init__(task_name)
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        self.setChecked(checked)
 
         self.taskRightClick = self.TaskRightClick(self)
         self.taskRightClick.insert_menu.installEventFilter(self)
@@ -115,7 +170,7 @@ class Section(QWidget):
     '''
     A Custom widget that holds tasks or sections. The visibility of the body can be toggled by clicking on the section header.
     '''
-    def __init__(self, section_name):
+    def __init__(self, section_name, open=False):
         super().__init__()
 
         self.sectionLayout = QVBoxLayout()
@@ -123,6 +178,7 @@ class Section(QWidget):
 
         self.sectionHeader = self.SectionHeader(section_name)
         self.sectionBody = self.SectionBody()
+        self.sectionBody.setVisible(open)
 
         self.sectionRightClick = self.SectionRightClick(self)
 
@@ -147,25 +203,32 @@ class Section(QWidget):
             section_body.show()
             toggle_icon.setText('▼')
 
-    def create_element(self, action):
-        print(action.parentWidget().parentWidget().parentWidget())
-        ## preventing double creation
-        if action.parentWidget().title() == 'Insert' and isinstance(action.parentWidget().parentWidget().parentWidget(), QScrollArea):
-            return
-        elif action.parentWidget().title() == 'Insert' and action.parentWidget().parentWidget().parentWidget() is self:
-            return
-        elif action.parentWidget().title() == 'Add' and action.parentWidget().parentWidget().parentWidget() is not self:
-            return
+    def create_element(self, **kwargs):
+        if 'state' not in kwargs:
+            print(kwargs['action'].parentWidget().parentWidget().parentWidget())
+            ## preventing double creation
+            if kwargs['action'].parentWidget().title() == 'Insert' and isinstance(kwargs['action'].parentWidget().parentWidget().parentWidget(), QScrollArea):
+                return
+            elif kwargs['action'].parentWidget().title() == 'Insert' and kwargs['action'].parentWidget().parentWidget().parentWidget() is self:
+                return
+            elif kwargs['action'].parentWidget().title() == 'Add' and kwargs['action'].parentWidget().parentWidget().parentWidget() is not self:
+                return
 
-        creation_type = action.parentWidget().title()
-        element_type = action.text()
-        print(creation_type, element_type)
+            creation_type = kwargs['action'].parentWidget().title()
+            element_type = kwargs['action'].text()
+            print(creation_type, element_type)
 
-        element_name, ok = QInputDialog.getText(self, f'{creation_type.lower()} {element_type.lower()}', f'enter name of {element_type.lower()}')
-        if not ok or element_name == '':
-            return
+            element_name, ok = QInputDialog.getText(self, f'{creation_type.lower()} {element_type.lower()}', f'enter name of {element_type.lower()}')
+            if not ok or element_name == '':
+                return
+            state=False
+        else:
+            element_type = kwargs['type']
+            creation_type = 'Add'
+            element_name = kwargs['name']
+            state = kwargs['state']
 
-        element = eval(f'{element_type}(element_name)')
+        element = eval(f"{element_type}(element_name, state)")
 
         # parent_element = eval(f"action{'.parentWidget()'*4}")
         # print(parent_element.sectionHeader.sectionName.getText())
@@ -173,7 +236,7 @@ class Section(QWidget):
         if creation_type == 'Insert':
             index = self.sectionBody.sectionBodyLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
 
-            insert_position = 0 if action.parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
+            insert_position = 0 if kwargs['action'].parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
 
             self.sectionBody.sectionBodyLayout.insertWidget(index + insert_position, element)
         else:
@@ -181,9 +244,6 @@ class Section(QWidget):
 
         # Listen for when an action in the element's menu is triggered
         eval(f'element.{element_type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
-
-
-
 
 
     def rename(self, action):
@@ -210,7 +270,7 @@ class Section(QWidget):
         }
 
         if action.text() in switch_case_dict:
-            switch_case_dict[action.text()](action)
+            switch_case_dict[action.text()](action=action)
 
     def eventFilter(self, object, event):
         # print(object, event, event.type())

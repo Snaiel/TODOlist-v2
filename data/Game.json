@@ -1,7 +1,6 @@
 {
-    "Research:1": {
-        "Market": 0,
-        "Mechanics": 0
-    },
-    "Setup": 0
+    "data": [
+        ["Setup", false],
+        [["Research", true], [["Market", false], ["Mechanics", true]]]
+    ]
 }

@@ -1,0 +1,8 @@
+{
+    "data": [
+        ["Washing dishes", false],
+        ["Fold clothes", true],
+        [["Feed pets", false], [["Dog", false], ["Cat", true]]],
+        ["Play piano", false]
+    ]
+}

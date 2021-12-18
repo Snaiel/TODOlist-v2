@@ -1,8 +1,32 @@
 {
     "data": [
-        ["Washing dishes", false],
-        ["Fold clothes", true],
-        [["Feed pets", false], [["Dog", false], ["Cat", true]]],
-        ["Play piano", false]
+        [
+            "Washing dishes",
+            true
+        ],
+        [
+            "Fold clothes",
+            false
+        ],
+        [
+            [
+                "Feed pets",
+                false
+            ],
+            [
+                [
+                    "Dog",
+                    true
+                ],
+                [
+                    "Cat",
+                    true
+                ]
+            ]
+        ],
+        [
+            "Play piano",
+            true
+        ]
     ]
 }

@@ -1,24 +1,21 @@
-from PyQt5 import QtGui
-from PyQt5.QtGui import QColor, QMouseEvent, QPalette
-from PyQt5.QtCore import QEvent, QObject, QSize, Qt, pyqtSlot
-from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QMouseEvent
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout, QInputDialog, QMenu, QCheckBox, QSizePolicy, QAction, QActionGroup, QLabel, QHBoxLayout
 
 class List(QScrollArea):
     '''
     A QScrollArea that will hold the Tasks and Sections of a given 'list' or 'project'
     '''
 
-    def __init__(self, name, focused, data):
+    def __init__(self, name, focused, data, root):
         super().__init__()
 
         self.list_name = name
         self.focused = focused
-        data = data
+        self.root = root
 
         if not focused:
             self.hide()
-
-        self.scrollAreaBody = QWidget()
 
         self.setWidgetResizable(True)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -26,8 +23,7 @@ class List(QScrollArea):
         self.scrollAreaLayout = QVBoxLayout()
         self.scrollAreaLayout.setAlignment(Qt.AlignmentFlag.AlignTop) 
 
-        self.scrollAreaBody.setLayout(self.scrollAreaLayout)
-        self.setWidget(self.scrollAreaBody)
+        self.setLayout(self.scrollAreaLayout)
 
         self.create_imported_data(data)
 
@@ -61,7 +57,7 @@ class List(QScrollArea):
             element_name = kwargs['name']
             state = kwargs['state']
 
-        element = eval(f"{type_of_element}(element_name, state)")
+        element = eval(f"{type_of_element}(element_name, self.root, state)")
         if 'action' in kwargs:
             action = kwargs['action']
             # index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
@@ -79,16 +75,35 @@ class List(QScrollArea):
 
         return element
 
+    def delete_element(self, action):
+        parent_widget = action.parentWidget().parentWidget()
+        print(parent_widget)
+        self.scrollAreaLayout.removeWidget(parent_widget)
+        parent_widget.deleteLater()
+
     def right_click_menu_clicked(self, action):
-        pass
+        switch_case_dict = {
+            'Delete': self.delete_element,
+            'Task': self.create_element,
+            'Section': self.create_element
+        }
+
+        if action is not None and action.text() in switch_case_dict:
+            if isinstance(action.parentWidget(), QMenu) and action.parentWidget().title() == 'Add':
+                return
+            print(action.text())
+            switch_case_dict[action.text()](action=action)
 
 class Task(QCheckBox):
     '''
     A QCheckBox that signifies a single task
     '''
 
-    def __init__(self, task_name, checked=False):
+    changed_state = pyqtSignal(list, bool)
+
+    def __init__(self, task_name, root, checked=False):
         super().__init__(task_name)
+        self.root = root
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setChecked(checked)
@@ -96,7 +111,22 @@ class Task(QCheckBox):
         self.taskRightClick = self.TaskRightClick(self)
         self.taskRightClick.insert_menu.installEventFilter(self)
         self.taskRightClick.triggered.connect(self.right_click_menu_clicked)
-        # self.taskRightClick.mouseReleaseEvent = lambda event: print(event)
+        self.changed_state.connect(root.send_changed_data)
+        self.installEventFilter(self)
+
+    def _get_indices(self):
+        indices = []
+        widget = []
+        widget.append(self.parentWidget())
+        indices.append(widget[0].layout().indexOf(self))
+        print(widget, indices)
+        while not isinstance(widget[-1], List):
+            widget.append(widget[-1].parentWidget())
+            widget.append(widget[-1].parentWidget())
+            indices.append(widget[-1].layout().indexOf(widget[-2]))
+            widget.pop(0)
+        print(indices)
+        return indices
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         if e.button() == 1:
@@ -123,12 +153,17 @@ class Task(QCheckBox):
     def eventFilter(self, object, event):
         # print(object, event.type())
 
-        # Prevent menu closing when selecting 'Before'/ 'After'
-        if event is not None and event.type() == QMouseEvent.MouseButtonPress:
-            action = object.actionAt(event.pos())
-            if isinstance(action, QAction):
-                action.trigger()
-            return True
+        if event is not None :
+            # Prevent menu closing when selecting 'Before'/ 'After'
+            if isinstance(object, QMenu) and event.type() == QMouseEvent.MouseButtonPress:
+                action = object.actionAt(event.pos())
+                if isinstance(action, QAction):
+                    action.trigger()
+                return True
+
+            # When the task is clicked
+            if isinstance(object, Task) and event.type() == QMouseEvent.MouseButtonRelease:
+                self.changed_state.emit(self._get_indices(), not object.isChecked())
         return False
 
 
@@ -170,8 +205,12 @@ class Section(QWidget):
     '''
     A Custom widget that holds tasks or sections. The visibility of the body can be toggled by clicking on the section header.
     '''
-    def __init__(self, section_name, open=False):
+
+    change_visibility = pyqtSignal(list, bool)
+
+    def __init__(self, section_name, root, open=False):
         super().__init__()
+        self.root = root
 
         self.sectionLayout = QVBoxLayout()
         self.sectionLayout.setContentsMargins(0, 0, 0, 0)
@@ -192,6 +231,7 @@ class Section(QWidget):
         self.sectionRightClick.triggered.connect(self.right_click_menu_clicked)
 
         # self.sectionRightClick.installEventFilter(self)
+        self.change_visibility.connect(root.send_changed_data)
         self.sectionHeader.installEventFilter(self)
 
     def _toggle_section(self, toggle_icon, section_body):
@@ -199,9 +239,11 @@ class Section(QWidget):
             section_body.hide()
             toggle_icon.setText('▶')
             toggle_icon.setStyleSheet("color: white; padding-bottom: 5px")
+            # self.change_visibility.emit(False)
         else:
             section_body.show()
             toggle_icon.setText('▼')
+            # self.change_visibility.emit(True)
 
     def create_element(self, **kwargs):
         if 'state' not in kwargs:
@@ -228,7 +270,7 @@ class Section(QWidget):
             element_name = kwargs['name']
             state = kwargs['state']
 
-        element = eval(f"{element_type}(element_name, state)")
+        element = eval(f"{element_type}(element_name, self.root, state)")
 
         # parent_element = eval(f"action{'.parentWidget()'*4}")
         # print(parent_element.sectionHeader.sectionName.getText())
@@ -278,13 +320,7 @@ class Section(QWidget):
         ## Toggle visibility of section body when the header is clicked
         if isinstance(object, self.SectionHeader) and event.type() == QMouseEvent.MouseButtonRelease:
             if event.button() == 1:
-                if self.sectionBody.isVisible():
-                    self.sectionBody.hide()
-                    self.sectionHeader.toggleIcon.setText('▶')
-                    self.sectionHeader.toggleIcon.setStyleSheet("color: white; padding-bottom: 5px")
-                else:
-                    self.sectionBody.show()
-                    self.sectionHeader.toggleIcon.setText('▼')
+                self._toggle_section(self.sectionHeader.toggleIcon, self.sectionBody)
 
             elif event.button() == 2:
                 self.sectionRightClick.popup(event.globalPos())

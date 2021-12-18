@@ -5,11 +5,10 @@ from os.path import isfile, join
 
 class Model:
     def __init__(self) -> None:
-        self.data = [dataObjects.List('Project 1'), dataObjects.List('Side Project')]
+        self.data = []
         self.app_data = {
             'focused': 'Game'
         }
-        self.test_data = []
 
         self.retrieve_data()
 
@@ -22,9 +21,34 @@ class Model:
             with open(join(cur_path, 'data', file), 'r') as json_file:
                 json_data = json.load(json_file)
                 json_data['name'] = file.split('.')[0]
-                self.test_data.append(json_data)
+                self.data.append(json_data)
 
-        print(self.test_data)
+        print(self.data)
+    
+    def write_to_todolist_file(self, list_name, indices, value):
+        with open(join(getcwd(), 'data', f'{list_name}.json'), 'r+') as json_file:
+                json_data = json.load(json_file)
+                json_file.seek(0)
+                element = json_data['data'][indices[-1]]
+                for i in reversed(indices[:-1]):
+                    if isinstance(element[0], list):
+                        element = element[1]
+                    element = element[i]
+                else:
+                    element[1] = value
+                json.dump(json_data, json_file, indent=4)
+                json_file.truncate()
+                
+
+
+
 
     def get_list_names(self):
-        return [i['name'] for i in self.test_data]
+        return [i['name'] for i in self.data]
+
+    def change_state(self, list_name, indices):
+        for todolist in self.data:
+            if todolist['name'] == list_name:
+                list_data = todolist['data']
+                print('nice', list_data)
+                return

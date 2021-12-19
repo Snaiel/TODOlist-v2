@@ -15,8 +15,24 @@
                     true
                 ],
                 [
+                    "nice",
+                    false
+                ],
+                [
                     "Mechanics",
                     false
+                ],
+                [
+                    [
+                        "Referencing",
+                        false
+                    ],
+                    [
+                        [
+                            "Websites",
+                            false
+                        ]
+                    ]
                 ]
             ]
         ]

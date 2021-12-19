@@ -27,14 +27,18 @@ class List(QScrollArea):
 
         self.create_imported_data(data)
 
-    def create_section_from_data(self, data):
-        section = self.create_element(type='Section', name=data[0][0], state=data[0][1])
+    def create_section_from_data(self, data, parent=None):
+        if parent is None:
+            section = self.create_element(type='Section', name=data[0][0], state=data[0][1])
+        else:
+            section = parent.create_element(type='Section', name=data[0][0], state=data[0][1])
+
         for element in data[1]:
             if isinstance(element[0], str):
                 print(element)
                 section.create_element(type='Task', name=element[0], state=element[1])
             else:
-                self.create_section_from_data(element)
+                self.create_section_from_data(element, section)
 
 
     def create_imported_data(self, data):
@@ -73,6 +77,10 @@ class List(QScrollArea):
         ## Listen for when an action in the element's menu is triggered
         eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
 
+        # If element is created by the user, write to file
+        if 'state' not in kwargs:
+            self.root.send_changed_data(element.get_index_location(), element_name, f'create_{type_of_element.lower()}')
+
         return element
 
     def delete_element(self, action):
@@ -99,7 +107,7 @@ class Task(QCheckBox):
     A QCheckBox that signifies a single task
     '''
 
-    changed_state = pyqtSignal(list, bool)
+    changed_state = pyqtSignal(list, bool, str)
 
     def __init__(self, task_name, root, checked=False):
         super().__init__(task_name)
@@ -114,7 +122,7 @@ class Task(QCheckBox):
         self.changed_state.connect(root.send_changed_data)
         self.installEventFilter(self)
 
-    def _get_indices(self):
+    def get_index_location(self):
         indices = []
         widget = []
         widget.append(self.parentWidget())
@@ -162,8 +170,9 @@ class Task(QCheckBox):
                 return True
 
             # When the task is clicked
-            if isinstance(object, Task) and event.type() == QMouseEvent.MouseButtonRelease:
-                self.changed_state.emit(self._get_indices(), not object.isChecked())
+            if isinstance(object, Task) and event.type() == QMouseEvent.MouseButtonRelease and event.button() == Qt.LeftButton:
+                print(event)
+                self.changed_state.emit(self.get_index_location(), not object.isChecked(), 'toggle_task')
         return False
 
 
@@ -206,7 +215,7 @@ class Section(QWidget):
     A Custom widget that holds tasks or sections. The visibility of the body can be toggled by clicking on the section header.
     '''
 
-    change_visibility = pyqtSignal(list, bool)
+    change_visibility = pyqtSignal(list, bool, str)
 
     def __init__(self, section_name, root, open=False):
         super().__init__()
@@ -225,14 +234,26 @@ class Section(QWidget):
         self.sectionLayout.addWidget(self.sectionBody)
         self.setLayout(self.sectionLayout)
 
-        self.sectionBody.hide()
-
         self.sectionRightClick.insert_menu.installEventFilter(self)
         self.sectionRightClick.triggered.connect(self.right_click_menu_clicked)
 
         # self.sectionRightClick.installEventFilter(self)
         self.change_visibility.connect(root.send_changed_data)
         self.sectionHeader.installEventFilter(self)
+
+    def get_index_location(self):
+        indices = []
+        widget = []
+        widget.append(self.parentWidget())
+        indices.append(widget[0].layout().indexOf(self))
+        print(widget, indices)
+        while not isinstance(widget[-1], List):
+            widget.append(widget[-1].parentWidget())
+            widget.append(widget[-1].parentWidget())
+            indices.append(widget[-1].layout().indexOf(widget[-2]))
+            widget.pop(0)
+        print(indices)
+        return indices
 
     def _toggle_section(self, toggle_icon, section_body):
         if section_body.isVisible():
@@ -244,6 +265,8 @@ class Section(QWidget):
             section_body.show()
             toggle_icon.setText('▼')
             # self.change_visibility.emit(True)
+        
+        self.change_visibility.emit(self.get_index_location(), section_body.isVisible(), 'toggle_section')
 
     def create_element(self, **kwargs):
         if 'state' not in kwargs:
@@ -276,7 +299,7 @@ class Section(QWidget):
         # print(parent_element.sectionHeader.sectionName.getText())
 
         if creation_type == 'Insert':
-            index = self.sectionBody.sectionBodyLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
+            index = self.sectionBody.sectionBodyLayout.indexOf(eval(f"kwargs['action']{'.parentWidget()'*3}"))
 
             insert_position = 0 if kwargs['action'].parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
 
@@ -286,6 +309,12 @@ class Section(QWidget):
 
         # Listen for when an action in the element's menu is triggered
         eval(f'element.{element_type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
+
+        # If element is created by the user, write to file
+        if 'state' not in kwargs:
+            self.root.send_changed_data(element.get_index_location(), element_name, f'create_{element_type.lower()}')
+
+        return element
 
 
     def rename(self, action):

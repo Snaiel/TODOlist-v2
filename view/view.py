@@ -89,10 +89,10 @@ class Window(QMainWindow):
 
         self.generalLayout.addLayout(self.addButtonsLayout)
 
-    @pyqtSlot(list, bool)
-    def send_changed_data(self, indices, state):
-        print(indices, state)
-        self.model.write_to_todolist_file(self.focused_list.list_name, indices, state)
+    @pyqtSlot(list, bool, str)
+    def send_changed_data(self, indices, value, action):
+        print(indices, value, action)
+        self.model.write_to_todolist_file(self.focused_list.list_name, indices, value, action)
 
     def add_combo_items(self, items, focused):
         self.combo.addItems(items)

@@ -67,10 +67,6 @@ class Model:
 
             json.dump(json_data, json_file, indent=4)
             json_file.truncate()
-                
-
-
-
 
     def get_list_names(self):
         return [i['name'] for i in self.data]
@@ -81,3 +77,16 @@ class Model:
                 list_data = todolist['data']
                 print('nice', list_data)
                 return
+
+    def create_list(self, list_name):
+        files = listdir(join(getcwd(), 'data'))
+        files = [file.split('.')[0] for file in files]
+        if list_name in files:
+            return False
+        else:
+            todolist_data = {"name": list_name, "data": []}
+            with open(join(getcwd(), 'data', f'{list_name}.json'), 'x') as json_file:
+                json.dump({"data": []}, json_file, indent=4)
+                self.data.append(todolist_data)
+                # self.app_data['focused'] = list_name
+            return todolist_data

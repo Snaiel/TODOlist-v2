@@ -1,6 +1,6 @@
 from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox
+from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog
 import view.widgetObjects as widgetObjects
 
 class Window(QMainWindow):
@@ -33,9 +33,13 @@ class Window(QMainWindow):
         self._darkMode()
 
     def import_data(self):
-        self.add_combo_items(self.model.get_list_names(), self.model.app_data['focused'])
-        self.add_lists(self.model.data, self.model.app_data['focused'])
-        self.set_focused_list(self.model.app_data['focused'])
+        focused_list = self.model.app_data['focused']
+        self.add_combo_items(self.model.get_list_names(), focused_list)
+
+        for todolist in self.model.data:
+            self.add_list(todolist, focused_list)
+
+        self.set_focused_list(focused_list)
 
     def _darkMode(self):
         palette = QPalette()
@@ -61,7 +65,7 @@ class Window(QMainWindow):
         self.menu = self.menuBar().addMenu("&Add")
         self.menu.addAction('&Task', lambda: self.create_element(type='Task'))
         self.menu.addAction('&Section', lambda: self.create_element(type='Section'))
-        self.menu.addAction('&List')
+        self.menu.addAction('&List', lambda: self.create_list())
 
     def _createComboBox(self):
         self.combo = QComboBox()
@@ -98,11 +102,13 @@ class Window(QMainWindow):
         self.combo.addItems(items)
         self.combo.setCurrentText(focused)
 
-    def add_lists(self, data, focused):
-        for todolist in data:
-            self.scrollAreaRowLayout.addWidget(widgetObjects.List(todolist['name'], True if todolist['name'] == focused else False, todolist['data'], self))
+    def add_list(self, todolist, focused):
+        self.scrollAreaRowLayout.addWidget(widgetObjects.List(todolist['name'], True if todolist['name'] == focused else False, todolist['data'], self))
 
     def set_focused_list(self, focused):
+        '''
+        the focus parameter indicates the name of the list
+        '''
         lists = self.scrollAreaRow.children()[1:]
         for list in lists:
             if list.list_name == focused:
@@ -120,3 +126,21 @@ class Window(QMainWindow):
 
     def create_element(self, **kwargs):
         self.focused_list.create_element(type=kwargs['type'])
+
+    def create_list(self):
+        print('create list')
+        list_name, ok = QInputDialog.getText(self, "create list", f"enter name of list")
+        if ok:
+            value = self.model.create_list(list_name)
+            if value is False:
+                message = QMessageBox(self)
+                message.setText('List with name already exists')
+                message.exec()
+            else:
+                print(value)
+                self.add_list(value, list_name)
+                self.change_focus(len(self.scrollAreaRow.children()[1:])-1)
+                self.combo.addItem(list_name)
+                self.combo.setCurrentText(list_name)
+
+                

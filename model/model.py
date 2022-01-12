@@ -6,11 +6,31 @@ from os.path import isfile, join
 class Model:
     def __init__(self) -> None:
         self.data = []
-        self.app_data = {
-            'focused': 'Game'
-        }
+        self.app_data = {}
+        # self.app_data = {
+        #     'focused': 'Game'
+        # }
 
         self.retrieve_data()
+        self.app_data = self.retrieve_app_data()
+
+        self.data = self.order_data_correctly()
+
+        self.write_to_app_data()
+
+    def retrieve_app_data(self):
+        with open('app_data.json', 'r') as json_file:
+            json_data = json.load(json_file)
+            todolist_names = self.get_list_names()
+
+            if json_data['focused'] not in todolist_names:
+                json_data['focused'] = todolist_names[0]
+
+            for order in json_data['order']:
+                if order not in todolist_names:
+                    json_data['order'].remove(order)
+
+            return json_data
 
     def retrieve_data(self):
         cur_path = getcwd()
@@ -24,6 +44,19 @@ class Model:
                 self.data.append(json_data)
 
         print(self.data)
+
+    def order_data_correctly(self):
+        data = self.data
+        order = self.app_data['order']
+        for list_in_correct_position in order:
+            data.insert(order.index(list_in_correct_position), data.pop(data.index([i for i in data if i['name'] in order][0])))
+
+        return data
+
+    def write_to_app_data(self):
+        with open('app_data.json', 'w') as json_file:
+            json.dump(self.app_data, json_file, indent=4)
+
     
     def write_to_todolist_file(self, list_name, indices, value, action):
         '''
@@ -71,13 +104,6 @@ class Model:
     def get_list_names(self):
         return [i['name'] for i in self.data]
 
-    def change_state(self, list_name, indices):
-        for todolist in self.data:
-            if todolist['name'] == list_name:
-                list_data = todolist['data']
-                print('nice', list_data)
-                return
-
     def create_list(self, list_name):
         files = listdir(join(getcwd(), 'data'))
         files = [file.split('.')[0] for file in files]
@@ -90,3 +116,7 @@ class Model:
                 self.data.append(todolist_data)
                 # self.app_data['focused'] = list_name
             return todolist_data
+
+    def change_focus(self, list_name):
+        self.app_data['focused'] = list_name
+        self.write_to_app_data()

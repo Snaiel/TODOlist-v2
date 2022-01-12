@@ -123,6 +123,8 @@ class Window(QMainWindow):
             list.setVisible(lists.index(list) == index)
             if lists.index(list) == index:
                 self.focused_list = list
+                print(list.list_name)
+                self.model.change_focus(list.list_name)
 
     def create_element(self, **kwargs):
         self.focused_list.create_element(type=kwargs['type'])

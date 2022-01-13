@@ -48,6 +48,19 @@ class List(QScrollArea):
             else:
                 self.create_section_from_data(element)
 
+    def right_click_menu_clicked(self, action):
+        switch_case_dict = {
+            'Delete': self.delete_element,
+            'Task': self.create_element,
+            'Section': self.create_element
+        }
+
+        if action is not None and action.text() in switch_case_dict:
+            if isinstance(action.parentWidget(), QMenu) and action.parentWidget().title() == 'Add':
+                return
+            print(action.text())
+            switch_case_dict[action.text()](action=action)
+
     def create_element(self, **kwargs):
         if 'state' not in kwargs:
             type_of_element = kwargs['type'] if 'type' in kwargs else kwargs['action'].text()
@@ -89,18 +102,12 @@ class List(QScrollArea):
         self.scrollAreaLayout.removeWidget(parent_widget)
         parent_widget.deleteLater()
 
-    def right_click_menu_clicked(self, action):
-        switch_case_dict = {
-            'Delete': self.delete_element,
-            'Task': self.create_element,
-            'Section': self.create_element
-        }
-
-        if action is not None and action.text() in switch_case_dict:
-            if isinstance(action.parentWidget(), QMenu) and action.parentWidget().title() == 'Add':
-                return
-            print(action.text())
-            switch_case_dict[action.text()](action=action)
+    def clear_list(self):
+        layout = self.scrollAreaLayout
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
 
 class Task(QCheckBox):
     '''

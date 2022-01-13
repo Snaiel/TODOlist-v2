@@ -104,6 +104,10 @@ class Model:
     def get_list_names(self):
         return [i['name'] for i in self.data]
 
+    def change_focus(self, list_name):
+        self.app_data['focused'] = list_name
+        self.write_to_app_data()
+
     def create_list(self, list_name):
         files = listdir(join(getcwd(), 'data'))
         files = [file.split('.')[0] for file in files]
@@ -117,6 +121,6 @@ class Model:
                 # self.app_data['focused'] = list_name
             return todolist_data
 
-    def change_focus(self, list_name):
-        self.app_data['focused'] = list_name
-        self.write_to_app_data()
+    def clear_list(self, focused_list):
+        with open(join(getcwd(), 'data', f'{focused_list}.json'), 'w') as json_file:
+            json.dump({"data": []}, json_file, indent=4)

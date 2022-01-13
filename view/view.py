@@ -59,13 +59,16 @@ class Window(QMainWindow):
         self.setPalette(palette)
 
     def _createMenu(self):
-        self.menu = self.menuBar().addMenu("&Menu")
-        self.menu.addAction('&Exit', self.close)
+        self.menu_file = self.menuBar().addMenu("&Menu")
+        self.menu_file.addAction('&Exit', self.close)
 
-        self.menu = self.menuBar().addMenu("&Add")
-        self.menu.addAction('&Task', lambda: self.create_element(type='Task'))
-        self.menu.addAction('&Section', lambda: self.create_element(type='Section'))
-        self.menu.addAction('&List', lambda: self.create_list())
+        self.menu_add = self.menuBar().addMenu("&Add")
+        self.menu_add.addAction('&Task', lambda: self.create_element(type='Task'))
+        self.menu_add.addAction('&Section', lambda: self.create_element(type='Section'))
+        self.menu_add.addAction('&List', lambda: self.create_list())
+
+        self.menu_edit = self.menuBar().addMenu("&Edit")
+        self.menu_edit.addAction("&Clear", lambda: self.clear_list())
 
     def _createComboBox(self):
         self.combo = QComboBox()
@@ -144,5 +147,12 @@ class Window(QMainWindow):
                 self.change_focus(len(self.scrollAreaRow.children()[1:])-1)
                 self.combo.addItem(list_name)
                 self.combo.setCurrentText(list_name)
+
+    def clear_list(self):
+        '''
+        deletes all the contents of the focused list
+        '''
+        self.focused_list.clear_list()
+        self.model.clear_list(self.focused_list.list_name)
 
                 

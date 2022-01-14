@@ -1,7 +1,9 @@
 from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog
+from view import preferencesDialog
 import view.widgetObjects as widgetObjects
+from view.preferencesDialog import PreferenceDialog
 
 class Window(QMainWindow):
     """Main Window."""
@@ -29,6 +31,8 @@ class Window(QMainWindow):
         self._createComboBox()
         self._createScrollAreaRow()
         self._createAddButtons()
+
+        self._createPreferenceDialog(self.model.get_list_names())
 
         self._darkMode()
 
@@ -69,6 +73,7 @@ class Window(QMainWindow):
 
         self.menu_edit = self.menuBar().addMenu("&Edit")
         self.menu_edit.addAction("&Clear", lambda: self.clear_list())
+        self.menu_edit.addAction("&Preferences", lambda: self.show_preferences_dialog())
 
     def _createComboBox(self):
         self.combo = QComboBox()
@@ -95,6 +100,12 @@ class Window(QMainWindow):
         self.addSectionButton.clicked.connect(lambda: self.create_element(type='Section'))
 
         self.generalLayout.addLayout(self.addButtonsLayout)
+
+    def _createPreferenceDialog(self, todolists):
+        self.preferenceDialog = PreferenceDialog(self, todolists)
+
+    def show_preferences_dialog(self):
+        self.preferenceDialog.exec()
 
     @pyqtSlot(list, bool, str)
     def send_changed_data(self, indices, value, action):

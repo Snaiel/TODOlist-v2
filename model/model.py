@@ -1,5 +1,4 @@
 import json
-import model.dataObjects as dataObjects
 from os import listdir, getcwd
 from os.path import isfile, join
 

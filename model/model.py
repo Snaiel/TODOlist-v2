@@ -1,9 +1,14 @@
 import json
-from os import listdir, getcwd
+from os import listdir, getcwd, remove
 from os.path import isfile, join
 
 class Model:
     def __init__(self) -> None:
+        '''
+        Model that handles all the data for the app
+
+        self.data is mainly for initialising the app, sending it to the view
+        '''
         self.data = []
         self.app_data = {}
         # self.app_data = {
@@ -49,14 +54,23 @@ class Model:
         order = self.app_data['order']
         for list_in_correct_position in order:
             data.insert(order.index(list_in_correct_position), data.pop(data.index([i for i in data if i['name'] in order][0])))
-
         return data
+
+    def get_list_names(self):
+        return [i['name'] for i in self.data]
+
+    def check_if_todolist_exists(self, list_name):
+        files = listdir(join(getcwd(), 'data'))
+        if f'{list_name}.json' in files:
+            return True
+        else:
+            return False
+
 
     def write_to_app_data(self):
         with open('app_data.json', 'w') as json_file:
             json.dump(self.app_data, json_file, indent=4)
 
-    
     def write_to_todolist_file(self, list_name, indices, value, action):
         '''
             list_name: name of current focused list
@@ -100,9 +114,6 @@ class Model:
             json.dump(json_data, json_file, indent=4)
             json_file.truncate()
 
-    def get_list_names(self):
-        return [i['name'] for i in self.data]
-
     def change_focus(self, list_name):
         self.app_data['focused'] = list_name
         self.write_to_app_data()
@@ -123,3 +134,27 @@ class Model:
     def clear_list(self, focused_list):
         with open(join(getcwd(), 'data', f'{focused_list}.json'), 'w') as json_file:
             json.dump({"data": []}, json_file, indent=4)
+
+    def rename_list(self, old_name, new_name):
+        '''
+        Assumes that the new file does not exist, creates the new file and places the old data into it, deleting the old json file.
+        '''
+        
+        for todolist in self.data:
+            if todolist['name'] == old_name:
+                todolist['name'] = new_name
+                break
+
+        with open(join(getcwd(), 'data', f'{old_name}.json'), 'r') as old_file:
+            json_data = json.load(old_file)
+
+            with open(join(getcwd(), 'data', f'{new_name}.json'), 'x') as new_file:
+                json.dump(json_data, new_file, indent=4)
+
+        self.delete_list(old_name)
+
+    def delete_list(self, list_name):
+        for todolist in self.data:
+            if todolist['name'] == list_name:
+                self.data.remove(todolist)
+        remove(join(getcwd(), 'data', f'{list_name}.json'))

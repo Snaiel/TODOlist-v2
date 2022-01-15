@@ -1,7 +1,6 @@
 {
-    "focused": "Game",
+    "focused": "Daily ToDo",
     "order": [
-        "Game",
         "Daily ToDo"
     ]
 }

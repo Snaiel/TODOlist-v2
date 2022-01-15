@@ -1,7 +1,6 @@
 from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
-from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog
-from view import preferencesDialog
+from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog, QAbstractButton
 import view.widgetObjects as widgetObjects
 from view.preferencesDialog import PreferenceDialog
 
@@ -72,7 +71,10 @@ class Window(QMainWindow):
         self.menu_add.addAction('&List', lambda: self.create_list())
 
         self.menu_edit = self.menuBar().addMenu("&Edit")
-        self.menu_edit.addAction("&Clear", lambda: self.clear_list())
+        list_menu = self.menu_edit.addMenu('List')
+        list_menu.addAction("&Clear", lambda: self.clear_list())
+        list_menu.addAction("&Rename", lambda: self.rename_list())
+        list_menu.addAction("&Delete", lambda: self.delete_list())
         self.menu_edit.addAction("&Preferences", lambda: self.show_preferences_dialog())
 
     def _createComboBox(self):
@@ -163,7 +165,45 @@ class Window(QMainWindow):
         '''
         deletes all the contents of the focused list
         '''
-        self.focused_list.clear_list()
-        self.model.clear_list(self.focused_list.list_name)
+        dialog = QMessageBox(self)
+        dialog.setWindowTitle("clear contents")
+        dialog.setText("Do you want to clear the contents of the focused list?")
+        dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        dialog.setDefaultButton(QMessageBox.Yes)
+        answer = dialog.exec()
+        if answer == QMessageBox.Yes:
+            self.focused_list.clear_list()
+            self.model.clear_list(self.focused_list.list_name)
+
+    def rename_list(self):
+        new_name, ok = QInputDialog.getText(self, 'rename list', 'enter new name')
+        if not ok or new_name == '':
+            return
+
+        if not self.model.check_if_todolist_exists(new_name):
+            self.model.rename_list(self.focused_list.list_name, new_name)
+            self.focused_list.list_name = new_name
+
+            self.combo.clear()
+            self.add_combo_items(self.model.get_list_names(), new_name)
+
+    def delete_list(self):
+        '''
+        deletes the focused list from existence
+        '''
+
+        dialog = QMessageBox(self)
+        dialog.setWindowTitle("delete list")
+        dialog.setText("Do you want to delete the focused list?")
+        dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        dialog.setDefaultButton(QMessageBox.Yes)
+        answer = dialog.exec()
+        if answer == QMessageBox.Yes:
+            self.scrollAreaRowLayout.removeWidget(self.focused_list)
+            self.focused_list.deleteLater()
+            self.model.delete_list(self.focused_list.list_name)
+            self.combo.clear()
+            self.add_combo_items(self.model.get_list_names(), None)
+            self.change_focus(0)
 
                 

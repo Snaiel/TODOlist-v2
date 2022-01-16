@@ -43,11 +43,12 @@ class PreferencesDialog(QDialog):
         self.todolistsList.clear()
         self.todolistsList.addItems(new_list)
 
-        for i in range(self.todolistsList.count()):
-            item = self.todolistsList.item(i)
-            if item.text() == selected_item:
-                focused_item = item
-                break
+        if selected_item:
+            for i in range(self.todolistsList.count()):
+                item = self.todolistsList.item(i)
+                if item.text() == selected_item:
+                    focused_item = item
+                    break
 
-        self.todolistsList.setCurrentItem(focused_item)
+            self.todolistsList.setCurrentItem(focused_item)
 

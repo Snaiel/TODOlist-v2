@@ -112,6 +112,8 @@ class Window(QMainWindow):
     def preferences_dialog_clicked(self, selected, action):
         if action == 'rename':
             self.rename_list(selected)
+        elif action == 'delete':
+            self.delete_list(selected)
 
     @pyqtSlot(list, bool, str)
     def send_changed_data(self, indices, value, action):
@@ -139,11 +141,12 @@ class Window(QMainWindow):
 
     def change_focus(self, index):
         lists = self.scrollAreaRow.children()[1:]
+        print(lists)
         for list in lists:
             list.setVisible(lists.index(list) == index)
             if lists.index(list) == index:
                 self.focused_list = list
-                print(list.list_name)
+                print('change!!', list.list_name)
                 self.model.change_focus(list.list_name)
 
     def create_element(self, **kwargs):
@@ -179,7 +182,7 @@ class Window(QMainWindow):
 
     def clear_list(self):
         '''
-        deletes all the contents of the focused list
+        deletes all the contents of the list given, defaults to the focused list
         '''
         dialog = QMessageBox(self)
         dialog.setWindowTitle("clear contents")
@@ -192,6 +195,9 @@ class Window(QMainWindow):
             self.model.clear_list(self.focused_list.list_name)
 
     def rename_list(self, list_to_rename=None):
+        '''
+        renames a list given, defaults to the focused list
+        '''
         new_name, ok = QInputDialog.getText(self, 'rename list', 'enter new name')
         if not ok or new_name == '':
             return
@@ -207,9 +213,9 @@ class Window(QMainWindow):
             self.combo.clear()
             self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if list_to_rename else new_name)
 
-    def delete_list(self):
+    def delete_list(self, list_to_delete=None):
         '''
-        deletes the focused list from existence
+        deletes the list given, defaults to the focused list
         '''
 
         dialog = QMessageBox(self)
@@ -219,11 +225,20 @@ class Window(QMainWindow):
         dialog.setDefaultButton(QMessageBox.Yes)
         answer = dialog.exec()
         if answer == QMessageBox.Yes:
-            self.scrollAreaRowLayout.removeWidget(self.focused_list)
-            self.focused_list.deleteLater()
-            self.model.delete_list(self.focused_list.list_name)
+            if list_to_delete:
+                the_list = self.get_list(list_to_delete)
+                self.scrollAreaRowLayout.removeWidget(the_list)
+                the_list.setParent(None)
+                the_list.deleteLater()
+                self.model.delete_list(list_to_delete)
+                self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
+            else:
+                self.scrollAreaRowLayout.removeWidget(self.focused_list)
+                self.focused_list.deleteLater()
+                self.model.delete_list(self.focused_list.list_name)
+
             self.combo.clear()
-            self.add_combo_items(self.model.get_list_names(), None)
+            self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if list_to_delete else None)
             self.change_focus(0)
 
                 

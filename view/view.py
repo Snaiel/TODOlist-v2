@@ -2,7 +2,7 @@ from PyQt5.QtGui import QColor, QMouseEvent, QPalette
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog, QAbstractButton
 import view.widgetObjects as widgetObjects
-from view.preferencesDialog import PreferenceDialog
+from view.preferencesDialog import PreferencesDialog
 
 class Window(QMainWindow):
     """Main Window."""
@@ -31,7 +31,7 @@ class Window(QMainWindow):
         self._createScrollAreaRow()
         self._createAddButtons()
 
-        self._createPreferenceDialog(self.model.get_list_names())
+        self._createPreferencesDialog(self.model.get_list_names())
 
         self._darkMode()
 
@@ -103,11 +103,15 @@ class Window(QMainWindow):
 
         self.generalLayout.addLayout(self.addButtonsLayout)
 
-    def _createPreferenceDialog(self, todolists):
-        self.preferenceDialog = PreferenceDialog(self, todolists)
+    def _createPreferencesDialog(self, todolists):
+        self.preferencesDialog = PreferencesDialog(self, todolists)
 
     def show_preferences_dialog(self):
-        self.preferenceDialog.exec()
+        self.preferencesDialog.exec()
+
+    def preferences_dialog_clicked(self, selected, action):
+        if action == 'rename':
+            self.rename_list(selected)
 
     @pyqtSlot(list, bool, str)
     def send_changed_data(self, indices, value, action):
@@ -145,6 +149,18 @@ class Window(QMainWindow):
     def create_element(self, **kwargs):
         self.focused_list.create_element(type=kwargs['type'])
 
+    def get_list(self, list_name):
+        '''
+        given the name of the list, return the widget
+        '''
+        lists = self.scrollAreaRow.children()[1:]
+        for list in lists:
+            if list.list_name == list_name:
+                return list
+        else:
+            return None
+
+
     def create_list(self):
         print('create list')
         list_name, ok = QInputDialog.getText(self, "create list", f"enter name of list")
@@ -175,17 +191,21 @@ class Window(QMainWindow):
             self.focused_list.clear_list()
             self.model.clear_list(self.focused_list.list_name)
 
-    def rename_list(self):
+    def rename_list(self, list_to_rename=None):
         new_name, ok = QInputDialog.getText(self, 'rename list', 'enter new name')
         if not ok or new_name == '':
             return
 
         if not self.model.check_if_todolist_exists(new_name):
-            self.model.rename_list(self.focused_list.list_name, new_name)
-            self.focused_list.list_name = new_name
-
+            if list_to_rename:
+                self.model.rename_list(list_to_rename, new_name)
+                self.get_list(list_to_rename).list_name = new_name
+                self.preferencesDialog.update_list_widget(self.model.get_list_names(), new_name)
+            else:
+                self.model.rename_list(self.focused_list.list_name, new_name)
+                self.focused_list.list_name = new_name
             self.combo.clear()
-            self.add_combo_items(self.model.get_list_names(), new_name)
+            self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if list_to_rename else new_name)
 
     def delete_list(self):
         '''

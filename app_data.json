@@ -1,4 +1,7 @@
 {
-    "focused": "Game",
-    "order": []
+    "focused": "Random",
+    "order": [
+        "Game",
+        "Random"
+    ]
 }

@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QColor, QMouseEvent, QPalette
+from PyQt5.QtGui import QColor, QMouseEvent, QPalette, QCloseEvent
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog, QAbstractButton
 import view.widgetObjects as widgetObjects
@@ -240,5 +240,9 @@ class Window(QMainWindow):
             self.combo.clear()
             self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if list_to_delete else None)
             self.change_focus(0)
+
+    def closeEvent(self, a0: QCloseEvent) -> None:
+        self.model.close_event(self.focused_list.list_name)
+        return super().closeEvent(a0)
 
                 

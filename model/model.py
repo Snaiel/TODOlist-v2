@@ -158,3 +158,8 @@ class Model:
             if todolist['name'] == list_name:
                 self.data.remove(todolist)
         remove(join(getcwd(), 'data', f'{list_name}.json'))
+
+    def close_event(self, focused):
+        self.app_data['focused'] = focused
+        self.app_data['order'] = [i['name'] for i in self.data]
+        self.write_to_app_data()

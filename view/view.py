@@ -110,10 +110,12 @@ class Window(QMainWindow):
         self.preferencesDialog.exec()
 
     def preferences_dialog_clicked(self, selected, action):
-        if action == 'rename':
-            self.rename_list(selected)
-        elif action == 'delete':
-            self.delete_list(selected)
+        FUNCS = {
+            'clear': self.clear_list,
+            'rename': self.rename_list,
+            'delete': self.delete_list
+        }
+        FUNCS[action](selected)
 
     @pyqtSlot(list, bool, str)
     def send_changed_data(self, indices, value, action):
@@ -180,19 +182,24 @@ class Window(QMainWindow):
                 self.combo.addItem(list_name)
                 self.combo.setCurrentText(list_name)
 
-    def clear_list(self):
+    def clear_list(self, list_to_clear=None):
         '''
         deletes all the contents of the list given, defaults to the focused list
         '''
         dialog = QMessageBox(self)
         dialog.setWindowTitle("clear contents")
-        dialog.setText("Do you want to clear the contents of the focused list?")
+        dialog.setText(f"Do you want to clear the contents of the {'selected' if list_to_clear else 'focused'} list?")
         dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         dialog.setDefaultButton(QMessageBox.Yes)
         answer = dialog.exec()
         if answer == QMessageBox.Yes:
-            self.focused_list.clear_list()
-            self.model.clear_list(self.focused_list.list_name)
+            if list_to_clear:
+                self.get_list(list_to_clear).clear_list()
+                self.model.clear_list(list_to_clear)
+                self.preferencesDialog.update_list_widget(self.model.get_list_names(), list_to_clear)
+            else:
+                self.focused_list.clear_list()
+                self.model.clear_list(self.focused_list.list_name)
 
     def rename_list(self, list_to_rename=None):
         '''

@@ -21,7 +21,7 @@ class PreferencesDialog(QDialog):
         buttonColumnLayout = QVBoxLayout(buttonColumn)
         buttonColumnLayout.setAlignment(Qt.AlignmentFlag.AlignTop) 
     
-        button_names = ['move up', 'move down', 'rename', 'delete']
+        button_names = ['move up', 'move down', 'clear', 'rename', 'delete']
 
         for name in button_names:
             button = QPushButton(name)

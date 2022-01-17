@@ -131,6 +131,13 @@ class Model:
                 # self.app_data['focused'] = list_name
             return todolist_data
 
+    def move_list(self, the_list, direction):
+        data = self.data
+        for todolist in data:
+            if todolist['name'] == the_list:
+                index_of_list = data.index(todolist)
+                data.insert(index_of_list + direction, data.pop(index_of_list))
+
     def clear_list(self, focused_list):
         with open(join(getcwd(), 'data', f'{focused_list}.json'), 'w') as json_file:
             json.dump({"data": []}, json_file, indent=4)

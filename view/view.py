@@ -3,6 +3,7 @@ from PyQt5.QtCore import QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog, QAbstractButton
 import view.widgetObjects as widgetObjects
 from view.preferencesDialog import PreferencesDialog
+from model.model import Model
 
 class Window(QMainWindow):
     """Main Window."""
@@ -10,7 +11,7 @@ class Window(QMainWindow):
         """Initializer."""
         super().__init__()
 
-        self.model = model
+        self.model = model # type: Model
 
         self._init_ui()
         self.import_data()
@@ -109,13 +110,15 @@ class Window(QMainWindow):
     def show_preferences_dialog(self):
         self.preferencesDialog.exec()
 
-    def preferences_dialog_clicked(self, selected, action):
+    def preferences_dialog_clicked(self, **kwargs):
+
         FUNCS = {
+            'move': self.move_list,
             'clear': self.clear_list,
             'rename': self.rename_list,
             'delete': self.delete_list
         }
-        FUNCS[action](selected)
+        FUNCS[kwargs['action']](**kwargs)
 
     @pyqtSlot(list, bool, str)
     def send_changed_data(self, indices, value, action):
@@ -165,7 +168,6 @@ class Window(QMainWindow):
         else:
             return None
 
-
     def create_list(self):
         print('create list')
         list_name, ok = QInputDialog.getText(self, "create list", f"enter name of list")
@@ -182,26 +184,29 @@ class Window(QMainWindow):
                 self.combo.addItem(list_name)
                 self.combo.setCurrentText(list_name)
 
-    def clear_list(self, list_to_clear=None):
+    def move_list(self, **kwargs):
+        self.model.move_list(kwargs['the_list'], 1 if kwargs['direction'] == 'up' else -1)
+
+    def clear_list(self, **kwargs):
         '''
         deletes all the contents of the list given, defaults to the focused list
         '''
         dialog = QMessageBox(self)
         dialog.setWindowTitle("clear contents")
-        dialog.setText(f"Do you want to clear the contents of the {'selected' if list_to_clear else 'focused'} list?")
+        dialog.setText(f"Do you want to clear the contents of the {'selected' if kwargs['the_list'] else 'focused'} list?")
         dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         dialog.setDefaultButton(QMessageBox.Yes)
         answer = dialog.exec()
         if answer == QMessageBox.Yes:
-            if list_to_clear:
-                self.get_list(list_to_clear).clear_list()
-                self.model.clear_list(list_to_clear)
-                self.preferencesDialog.update_list_widget(self.model.get_list_names(), list_to_clear)
+            if 'the_list' in kwargs:
+                self.get_list(kwargs['the_list']).clear_list()
+                self.model.clear_list(kwargs['the_list'])
+                self.preferencesDialog.update_list_widget(self.model.get_list_names(), kwargs['the_list'])
             else:
                 self.focused_list.clear_list()
                 self.model.clear_list(self.focused_list.list_name)
 
-    def rename_list(self, list_to_rename=None):
+    def rename_list(self, **kwargs):
         '''
         renames a list given, defaults to the focused list
         '''
@@ -210,17 +215,17 @@ class Window(QMainWindow):
             return
 
         if not self.model.check_if_todolist_exists(new_name):
-            if list_to_rename:
-                self.model.rename_list(list_to_rename, new_name)
-                self.get_list(list_to_rename).list_name = new_name
+            if 'the_list' in kwargs:
+                self.model.rename_list(kwargs['the_list'], new_name)
+                self.get_list(kwargs['the_list']).list_name = new_name
                 self.preferencesDialog.update_list_widget(self.model.get_list_names(), new_name)
             else:
                 self.model.rename_list(self.focused_list.list_name, new_name)
                 self.focused_list.list_name = new_name
             self.combo.clear()
-            self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if list_to_rename else new_name)
+            self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if kwargs['the_list'] else new_name)
 
-    def delete_list(self, list_to_delete=None):
+    def delete_list(self, **kwargs):
         '''
         deletes the list given, defaults to the focused list
         '''
@@ -232,12 +237,12 @@ class Window(QMainWindow):
         dialog.setDefaultButton(QMessageBox.Yes)
         answer = dialog.exec()
         if answer == QMessageBox.Yes:
-            if list_to_delete:
-                the_list = self.get_list(list_to_delete)
+            if 'the_list' in kwargs:
+                the_list = self.get_list(kwargs['the_list'])
                 self.scrollAreaRowLayout.removeWidget(the_list)
                 the_list.setParent(None)
                 the_list.deleteLater()
-                self.model.delete_list(list_to_delete)
+                self.model.delete_list(kwargs['the_list'])
                 self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
             else:
                 self.scrollAreaRowLayout.removeWidget(self.focused_list)
@@ -245,7 +250,7 @@ class Window(QMainWindow):
                 self.model.delete_list(self.focused_list.list_name)
 
             self.combo.clear()
-            self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if list_to_delete else None)
+            self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if kwargs['the_list'] else None)
             self.change_focus(0)
 
     def closeEvent(self, a0: QCloseEvent) -> None:

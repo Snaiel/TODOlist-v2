@@ -30,14 +30,10 @@ class PreferencesDialog(QDialog):
             buttonColumnLayout.addWidget(button)
 
         buttonColumnLayout.setContentsMargins(0, 0, 0, 0)
-
         dialogLayout.addWidget(buttonColumn, 0, 1)
 
-
-        # dialogLayout.addWidget(QLabel('Hello'), 0, 1)
-
     def button_clicked(self, action):
-        self.parent.preferences_dialog_clicked(self.todolistsList.currentItem().text(), action)
+        self.parent.preferences_dialog_clicked(the_list=self.todolistsList.currentItem().text(), action=action)
 
     def update_list_widget(self, new_list, selected_item):
         self.todolistsList.clear()

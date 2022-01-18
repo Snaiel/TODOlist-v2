@@ -1,7 +1,7 @@
 import json
-from os import listdir, getcwd, remove
-from os.path import isfile, join
-
+from os import listdir, remove
+from os.path import isfile, join, realpath, dirname
+from sys import argv
 class Model:
     def __init__(self) -> None:
         '''
@@ -14,6 +14,8 @@ class Model:
         # self.app_data = {
         #     'focused': 'Game'
         # }
+
+        self.script_directory = dirname(realpath(argv[0]))
 
         self.retrieve_data()
         self.app_data = self.retrieve_app_data()
@@ -43,7 +45,7 @@ class Model:
             }
 
     def retrieve_data(self):
-        cur_path = getcwd()
+        cur_path = self.script_directory
         files = listdir(join(cur_path, 'data'))
         files.remove('.gitignore')
 
@@ -72,7 +74,7 @@ class Model:
             return []
 
     def check_if_todolist_exists(self, list_name):
-        files = listdir(join(getcwd(), 'data'))
+        files = listdir(join(self.script_directory, 'data'))
         if f'{list_name}.json' in files:
             return True
         else:
@@ -96,7 +98,7 @@ class Model:
                 - create_task
                 - create_section
         '''
-        with open(join(getcwd(), 'data', f'{list_name}.json'), 'r+') as json_file:
+        with open(join(self.script_directory, 'data', f'{list_name}.json'), 'r+') as json_file:
             json_data = json.load(json_file)
             json_file.seek(0)
 
@@ -131,13 +133,13 @@ class Model:
         self.write_to_app_data()
 
     def create_list(self, list_name):
-        files = listdir(join(getcwd(), 'data'))
+        files = listdir(join(self.script_directory, 'data'))
         files = [file.split('.')[0] for file in files]
         if list_name in files:
             return False
         else:
             todolist_data = {"name": list_name, "data": []}
-            with open(join(getcwd(), 'data', f'{list_name}.json'), 'x') as json_file:
+            with open(join(self.script_directory, 'data', f'{list_name}.json'), 'x') as json_file:
                 json.dump({"data": []}, json_file, indent=4)
                 self.data.append(todolist_data)
                 # self.app_data['focused'] = list_name
@@ -152,7 +154,7 @@ class Model:
                 break
 
     def clear_list(self, focused_list):
-        with open(join(getcwd(), 'data', f'{focused_list}.json'), 'w') as json_file:
+        with open(join(self.script_directory, 'data', f'{focused_list}.json'), 'w') as json_file:
             json.dump({"data": []}, json_file, indent=4)
 
     def rename_list(self, old_name, new_name):
@@ -165,10 +167,10 @@ class Model:
                 todolist['name'] = new_name
                 break
 
-        with open(join(getcwd(), 'data', f'{old_name}.json'), 'r') as old_file:
+        with open(join(self.script_directory, 'data', f'{old_name}.json'), 'r') as old_file:
             json_data = json.load(old_file)
 
-            with open(join(getcwd(), 'data', f'{new_name}.json'), 'x') as new_file:
+            with open(join(self.script_directory, 'data', f'{new_name}.json'), 'x') as new_file:
                 json.dump(json_data, new_file, indent=4)
 
         self.delete_list(old_name)
@@ -177,7 +179,7 @@ class Model:
         for todolist in self.data:
             if todolist['name'] == list_name:
                 self.data.remove(todolist)
-        remove(join(getcwd(), 'data', f'{list_name}.json'))
+        remove(join(self.script_directory, 'data', f'{list_name}.json'))
 
     def close_event(self, focused):
         self.app_data['focused'] = focused

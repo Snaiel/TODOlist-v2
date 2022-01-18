@@ -15,7 +15,6 @@ class Window(QMainWindow):
 
         self._init_ui()
         self.import_data()
-        
 
     def _init_ui(self):
         self.setWindowTitle('TODOlist')
@@ -178,7 +177,6 @@ class Window(QMainWindow):
                 message.setText('List with name already exists')
                 message.exec()
             else:
-                print(value)
                 self.add_list(value, list_name)
                 self.change_focus(len(self.scrollAreaRow.children()[1:])-1)
                 self.combo.addItem(list_name)

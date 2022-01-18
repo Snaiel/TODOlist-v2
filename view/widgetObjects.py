@@ -14,18 +14,21 @@ class List(QScrollArea):
         self.focused = focused
         self.root = root
 
-        if not focused:
-            self.hide()
+        self.setVisible(focused)
 
+        self.theWidget = QWidget()
+        self.setWidget(self.theWidget)
+            
         self.setWidgetResizable(True)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
 
         self.scrollAreaLayout = QVBoxLayout()
         self.scrollAreaLayout.setAlignment(Qt.AlignmentFlag.AlignTop) 
 
-        self.setLayout(self.scrollAreaLayout)
+        self.theWidget.setLayout(self.scrollAreaLayout)
 
         self.create_imported_data(data)
+        print(self.isVisible())
 
     def create_section_from_data(self, data, parent=None):
         if parent is None:
@@ -35,7 +38,7 @@ class List(QScrollArea):
 
         for element in data[1]:
             if isinstance(element[0], str):
-                print(element)
+                # print(element)
                 section.create_element(type='Task', name=element[0], state=element[1])
             else:
                 self.create_section_from_data(element, section)
@@ -120,7 +123,7 @@ class Task(QCheckBox):
         super().__init__(task_name)
         self.root = root
 
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        # self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setChecked(checked)
 
         self.taskRightClick = self.TaskRightClick(self)
@@ -135,7 +138,7 @@ class Task(QCheckBox):
         widget.append(self.parentWidget())
         indices.append(widget[0].layout().indexOf(self))
         print(widget, indices)
-        while not isinstance(widget[-1], List):
+        while not isinstance(widget[-1].parentWidget().parentWidget(), List):
             widget.append(widget[-1].parentWidget())
             widget.append(widget[-1].parentWidget())
             indices.append(widget[-1].layout().indexOf(widget[-2]))
@@ -254,7 +257,7 @@ class Section(QWidget):
         widget.append(self.parentWidget())
         indices.append(widget[0].layout().indexOf(self))
         print(widget, indices)
-        while not isinstance(widget[-1], List):
+        while not isinstance(widget[-1].parentWidget().parentWidget(), List):
             widget.append(widget[-1].parentWidget())
             widget.append(widget[-1].parentWidget())
             indices.append(widget[-1].layout().indexOf(widget[-2]))
@@ -402,7 +405,7 @@ class Section(QWidget):
             self.sectionBodyLayout.setContentsMargins(20, 5, 20, 5)
 
             # self.sectionBodyLayout.addWidget(QCheckBox('Quest'))
-            self.setLayout(self.sectionBodyLayout)
+            self.setLayout(self.sectionBodyLayout)            
 
     class SectionRightClick(QMenu):
         def __init__(self, parent):

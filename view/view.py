@@ -183,6 +183,7 @@ class Window(QMainWindow):
                 self.change_focus(len(self.scrollAreaRow.children()[1:])-1)
                 self.combo.addItem(list_name)
                 self.combo.setCurrentText(list_name)
+                self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
 
     def move_list(self, **kwargs):
         direction = kwargs['action'].split()[1]
@@ -258,7 +259,6 @@ class Window(QMainWindow):
                 the_list.setParent(None)
                 the_list.deleteLater()
                 self.model.delete_list(kwargs['the_list'])
-                self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
             else:
                 self.scrollAreaRowLayout.removeWidget(self.focused_list)
                 self.focused_list.deleteLater()
@@ -267,6 +267,7 @@ class Window(QMainWindow):
             self.combo.clear()
             self.add_combo_items(self.model.get_list_names(), self.focused_list.list_name if 'the_list' in kwargs else None)
             self.change_focus(0)
+            self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
 
     def closeEvent(self, a0: QCloseEvent) -> None:
         self.model.close_event(self.focused_list.list_name)

@@ -23,23 +23,29 @@ class Model:
         self.write_to_app_data()
 
     def retrieve_app_data(self):
-        with open('app_data.json', 'r') as json_file:
-            json_data = json.load(json_file)
-            todolist_names = self.get_list_names()
+        if isfile('app_data.json'):
+            with open('app_data.json', 'r') as json_file:
+                json_data = json.load(json_file)
+                todolist_names = self.get_list_names()
 
-            if json_data['focused'] not in todolist_names:
-                json_data['focused'] = todolist_names[0]
+                if len(todolist_names) != 0 and json_data['focused'] not in todolist_names:
+                    json_data['focused'] = todolist_names[0]
 
-            for order in json_data['order']:
-                if order not in todolist_names:
-                    json_data['order'].remove(order)
+                for order in json_data['order']:
+                    if order not in todolist_names:
+                        json_data['order'].remove(order)
 
-            return json_data
+                return json_data
+        else:
+            return {
+                'focused': None,
+                'order': []
+            }
 
     def retrieve_data(self):
         cur_path = getcwd()
         files = listdir(join(cur_path, 'data'))
-        print(files)
+        files.remove('.gitignore')
 
         for file in files:
             with open(join(cur_path, 'data', file), 'r') as json_file:
@@ -51,13 +57,19 @@ class Model:
 
     def order_data_correctly(self):
         data = self.data
-        order = self.app_data['order']
-        for list_in_correct_position in order:
-            data.insert(order.index(list_in_correct_position), data.pop(data.index([i for i in data if i['name'] in order][0])))
-        return data
+        if len(data) != 0:
+            order = self.app_data['order']
+            for list_in_correct_position in order:
+                data.insert(order.index(list_in_correct_position), data.pop(data.index([i for i in data if i['name'] in order][0])))
+            return data
+        else:
+            return []
 
     def get_list_names(self):
-        return [i['name'] for i in self.data]
+        if len(self.data) != 0:
+            return [i['name'] for i in self.data]
+        else:
+            return []
 
     def check_if_todolist_exists(self, list_name):
         files = listdir(join(getcwd(), 'data'))

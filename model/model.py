@@ -85,7 +85,7 @@ class Model:
         with open('app_data.json', 'w') as json_file:
             json.dump(self.app_data, json_file, indent=4)
 
-    def write_to_todolist_file(self, list_name, indices, value, action):
+    def write_to_todolist_file(self, **kwargs):
         '''
             list_name: name of current focused list
             indices: the list of indices that locate the element being modified
@@ -97,15 +97,18 @@ class Model:
                 - toggle_section
                 - create_task
                 - create_section
+                - delete_element
         '''
-        with open(join(self.script_directory, 'data', f'{list_name}.json'), 'r+') as json_file:
+        with open(join(self.script_directory, 'data', f"{kwargs['list_name']}.json"), 'r+') as json_file:
             json_data = json.load(json_file)
             json_file.seek(0)
 
-            if 'create' in action: # value: the name of the element
-                element = [value, False] if 'task' in action else [[value, False], []]
+            print(kwargs['action'])
+
+            if 'create' in kwargs['action']: # value: the name of the element
+                element = [kwargs['value'], False] if 'task' in kwargs['action'] else [[kwargs['value'], False], []]
                 current_element = json_data['data'] # the root list
-                for i in reversed(indices):
+                for i in reversed(kwargs['indices']):
                     if i >= len(current_element) or isinstance(current_element[i][0], str):
                         continue
                     else:
@@ -113,17 +116,30 @@ class Model:
 
                 current_element.insert(i, element)
 
-            elif 'toggle' in action:
-                current_element = json_data['data'][indices[-1]]
-                for i in reversed(indices[:-1]):
+            elif kwargs['action'] in ('toggle_task', 'toggle_section', 'delete_element'):
+                print(kwargs['action'], kwargs['indices'])
+                if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:
+                    json_data['data'].pop(kwargs['indices'][0])
+
+                current_element = json_data['data'][kwargs['indices'][-1]]
+                for i in range(len(kwargs['indices'])-1):
                     if isinstance(current_element[0], list):
                         current_element = current_element[1]
-                    current_element = current_element[i]
 
-                if action == 'toggle_task':
-                    current_element[1] = value
-                elif action == 'toggle_section':
-                    current_element[0][1] = value
+                    print(kwargs['action'], current_element, kwargs['indices'], list(reversed(kwargs['indices'][:-1])), i)
+                    if kwargs['action'] == 'delete_element' and i == len(kwargs['indices']) - 2:
+                        current_element.pop(list(reversed(kwargs['indices'][:-1]))[i])
+                        break
+
+                    current_element = current_element[list(reversed(kwargs['indices'][:-1]))[i]]
+
+                if kwargs['action'] == 'toggle_task':
+                    current_element[1] = kwargs['value']
+                elif kwargs['action'] == 'toggle_section':
+                    current_element[0][1] = kwargs['value']
+
+            
+
 
             json.dump(json_data, json_file, indent=4)
             json_file.truncate()

@@ -119,10 +119,11 @@ class Window(QMainWindow):
         }
         FUNCS[kwargs['action']](**kwargs)
 
-    @pyqtSlot(list, bool, str)
-    def send_changed_data(self, indices, value, action):
-        print(indices, value, action)
-        self.model.write_to_todolist_file(self.focused_list.list_name, indices, value, action)
+    @pyqtSlot(dict)
+    def send_changed_data(self, kwargs):
+        kwargs['list_name'] = self.focused_list.list_name
+        print(kwargs)
+        self.model.write_to_todolist_file(**kwargs)
 
     def add_combo_items(self, items, focused):
         self.combo.addItems(items)

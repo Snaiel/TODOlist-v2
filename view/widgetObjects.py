@@ -95,15 +95,29 @@ class List(QScrollArea):
 
         # If element is created by the user, write to file
         if 'state' not in kwargs:
-            self.root.send_changed_data(element.get_index_location(), element_name, f'create_{type_of_element.lower()}')
+            sending_data = {
+                'indices': element.get_index_location(),
+                'value': element_name,
+                'action': f'create_{type_of_element.lower()}'
+            }
+            self.root.send_changed_data(sending_data)
 
         return element
 
     def delete_element(self, action):
         parent_widget = action.parentWidget().parentWidget()
         print(parent_widget)
+
+        kwargs = {
+            'indices': parent_widget.get_index_location(),
+            'action': 'delete_element'
+        }
+        self.root.send_changed_data(kwargs)
+
         self.scrollAreaLayout.removeWidget(parent_widget)
         parent_widget.deleteLater()
+
+        
 
     def clear_list(self):
         layout = self.scrollAreaLayout
@@ -117,7 +131,7 @@ class Task(QCheckBox):
     A QCheckBox that signifies a single task
     '''
 
-    changed_state = pyqtSignal(list, bool, str)
+    changed_state = pyqtSignal(dict)
 
     def __init__(self, task_name, root, checked=False):
         super().__init__(task_name)
@@ -182,7 +196,12 @@ class Task(QCheckBox):
             # When the task is clicked
             if isinstance(object, Task) and event.type() == QMouseEvent.MouseButtonRelease and event.button() == Qt.LeftButton:
                 print(event)
-                self.changed_state.emit(self.get_index_location(), not object.isChecked(), 'toggle_task')
+                kwargs = {
+                    'indices': self.get_index_location(),
+                    'value': not object.isChecked(),
+                    'action': 'toggle_task'
+                }
+                self.changed_state.emit(kwargs)
         return False
 
 
@@ -225,7 +244,7 @@ class Section(QWidget):
     A Custom widget that holds tasks or sections. The visibility of the body can be toggled by clicking on the section header.
     '''
 
-    change_visibility = pyqtSignal(list, bool, str)
+    change_visibility = pyqtSignal(dict)
 
     def __init__(self, section_name, root, open=False):
         super().__init__()
@@ -270,13 +289,16 @@ class Section(QWidget):
             section_body.hide()
             toggle_icon.setText('▶')
             toggle_icon.setStyleSheet("color: white; padding-bottom: 5px")
-            # self.change_visibility.emit(False)
         else:
             section_body.show()
             toggle_icon.setText('▼')
-            # self.change_visibility.emit(True)
         
-        self.change_visibility.emit(self.get_index_location(), section_body.isVisible(), 'toggle_section')
+        kwargs = {
+            'indices': self.get_index_location(),
+            'value': section_body.isVisible(),
+            'action': 'toggle_section'
+        }
+        self.change_visibility.emit(kwargs)
 
     def create_element(self, **kwargs):
         if 'state' not in kwargs:
@@ -322,7 +344,12 @@ class Section(QWidget):
 
         # If element is created by the user, write to file
         if 'state' not in kwargs:
-            self.root.send_changed_data(element.get_index_location(), element_name, f'create_{element_type.lower()}')
+            sending_data = {
+                'indices': element.get_index_location(),
+                'value': element_name,
+                'action': f'create_{element_type.lower()}'
+            }
+            self.root.send_changed_data(sending_data)
 
         return element
 
@@ -336,6 +363,13 @@ class Section(QWidget):
     def delete_child_element(self, action):
         parent_widget = action.parentWidget().parentWidget()
         print(parent_widget)
+
+        kwargs = {
+            'indices': parent_widget.get_index_location(),
+            'action': 'delete_element'
+        }
+        self.root.send_changed_data(kwargs)
+
         self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)
         parent_widget.deleteLater()
 

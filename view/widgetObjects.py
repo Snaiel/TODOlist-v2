@@ -392,6 +392,18 @@ class Section(QWidget):
             }
             self.root.send_changed_data(sending_data)
 
+        if 'section_data' in kwargs:
+            for sub_element in kwargs['section_data']:
+                print(sub_element)
+                creation_data = {}
+                creation_data['type'] = 'Task' if isinstance(sub_element[1], bool) else 'Section'
+                creation_data['name'] = sub_element[0] if creation_data['type'] == 'Task' else sub_element[0][0]
+                creation_data['state'] = sub_element[1] if creation_data['type'] == 'Task' else sub_element[0][1]
+                creation_data['pasted'] = True
+                if creation_data['type'] == 'Section':
+                    creation_data['section_data'] = sub_element[1]
+                element.create_element(**creation_data)
+
         return element
 
     def rename(self, action):
@@ -413,14 +425,18 @@ class Section(QWidget):
         self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)
         parent_widget.deleteLater()
 
-    def get_section_data(self):
+    def get_section_data(self, section=None):
         data = []
-        data.append([self.sectionHeader.sectionName.text(), self.sectionBody.isVisible()])
+        if not section:
+            section = self
+        data.append([section.sectionHeader.sectionName.text(), section.sectionBody.isVisible()])
         # print(self.sectionBody.children())
         section_data = []
-        for element in self.sectionBody.children()[1:]:
+        for element in section.sectionBody.children()[1:]:
             if isinstance(element, Task):
                 section_data.append([element.text(), element.isChecked()])
+            else:
+                section_data.append(self.get_section_data(element))
         data.append(section_data)
         return(data)
 
@@ -431,7 +447,16 @@ class Section(QWidget):
         print(self.get_section_data())
 
     def paste(self, action):
-        pass
+        element_data = self.root.copied_element
+        kwargs = { }
+
+        kwargs['type'] = 'Task' if isinstance(element_data[1], bool) else 'Section'
+        kwargs['name'] = element_data[0] if kwargs['type'] == 'Task' else element_data[0][0]
+        kwargs['state'] = element_data[1] if kwargs['type'] == 'Task' else element_data[0][1]
+        if kwargs['type'] == 'Section':
+            kwargs['section_data'] = element_data[1]
+
+        self.create_element(**kwargs)
 
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):

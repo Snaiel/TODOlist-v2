@@ -308,8 +308,10 @@ class Section(QWidget):
         self.change_visibility.connect(root.send_changed_data)
         self.sectionHeader.installEventFilter(self)
 
+        print(section_name, open, self.sectionBody.isVisible())
         if open != self.sectionBody.isVisible():
             self._toggle_section(self.sectionHeader.toggleIcon, self.sectionBody, True)
+        self.sectionBody.setVisible(open)
 
     def get_index_location(self):
         indices = []

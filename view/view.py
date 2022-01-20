@@ -35,6 +35,8 @@ class Window(QMainWindow):
 
         self._darkMode()
 
+        self.copied_element = None
+
     def import_data(self):
         focused_list = self.model.app_data['focused']
         self.add_combo_items(self.model.get_list_names(), focused_list)
@@ -71,6 +73,7 @@ class Window(QMainWindow):
         self.menu_add.addAction('&List', lambda: self.create_list())
 
         self.menu_edit = self.menuBar().addMenu("&Edit")
+        self.menu_edit.addAction('Paste', lambda: self.focused_list.paste())
         list_menu = self.menu_edit.addMenu('List')
         list_menu.addAction("&Clear", lambda: self.clear_list())
         list_menu.addAction("&Rename", lambda: self.rename_list())

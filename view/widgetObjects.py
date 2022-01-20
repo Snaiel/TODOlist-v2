@@ -1,3 +1,4 @@
+from xml.etree.ElementTree import SubElement
 from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout, QInputDialog, QMenu, QCheckBox, QSizePolicy, QAction, QActionGroup, QLabel, QHBoxLayout
@@ -28,26 +29,25 @@ class List(QScrollArea):
         self.theWidget.setLayout(self.scrollAreaLayout)
 
         self.create_imported_data(data)
-        print(self.isVisible())
+        # print(self.isVisible())
 
     def create_section_from_data(self, data, parent=None):
         if parent is None:
-            section = self.create_element(type='Section', name=data[0][0], state=data[0][1])
+            section = self.create_element(type='Section', name=data[0][0], state=data[0][1], imported=True)
         else:
-            section = parent.create_element(type='Section', name=data[0][0], state=data[0][1])
+            section = parent.create_element(type='Section', name=data[0][0], state=data[0][1], imported=True)
 
         for element in data[1]:
             if isinstance(element[0], str):
                 # print(element)
-                section.create_element(type='Task', name=element[0], state=element[1])
+                section.create_element(type='Task', name=element[0], state=element[1], imported=True)
             else:
                 self.create_section_from_data(element, section)
-
 
     def create_imported_data(self, data):
         for element in data:
             if isinstance(element[0], str):
-                self.create_element(type='Task', name=element[0], state=element[1])
+                self.create_element(type='Task', name=element[0], state=element[1], imported=True)
             else:
                 self.create_section_from_data(element)
 
@@ -65,6 +65,17 @@ class List(QScrollArea):
             switch_case_dict[action.text()](action=action)
 
     def create_element(self, **kwargs):
+        '''
+            creates an element, placing it somewhere lol idk
+
+            - type: task or section
+            - action: whether an element is created by a right click event, the right click action
+            - name: the text shown on the task or section
+            - state: whether a task is checked or a section is opened
+        '''
+        if 'imported' not in kwargs:
+            kwargs['imported'] = False
+
         if 'state' not in kwargs:
             type_of_element = kwargs['type'] if 'type' in kwargs else kwargs['action'].text()
             element_name, ok = QInputDialog.getText(self, f"create {type_of_element.lower()}", f"enter name of {type_of_element.lower()}")
@@ -94,13 +105,25 @@ class List(QScrollArea):
         eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
 
         # If element is created by the user, write to file
-        if 'state' not in kwargs:
+        if kwargs['imported'] == False:
             sending_data = {
                 'indices': element.get_index_location(),
                 'value': element_name,
                 'action': f'create_{type_of_element.lower()}'
             }
             self.root.send_changed_data(sending_data)
+
+        if 'section_data' in kwargs:
+            for sub_element in kwargs['section_data']:
+                print(sub_element)
+                creation_data = {}
+                creation_data['type'] = 'Task' if isinstance(sub_element[1], bool) else 'Section'
+                creation_data['name'] = sub_element[0] if creation_data['type'] == 'Task' else sub_element[0][0]
+                creation_data['state'] = sub_element[1] if creation_data['type'] == 'Task' else sub_element[0][1]
+                creation_data['pasted'] = True
+                if creation_data['type'] == 'Section':
+                    creation_data['section_data'] = sub_element[1]
+                element.create_element(**creation_data)
 
         return element
 
@@ -117,14 +140,24 @@ class List(QScrollArea):
         self.scrollAreaLayout.removeWidget(parent_widget)
         parent_widget.deleteLater()
 
-        
-
     def clear_list(self):
         layout = self.scrollAreaLayout
         while layout.count():
             child = layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
+
+    def paste(self):
+        element_data = self.root.copied_element
+        kwargs = { }
+
+        kwargs['type'] = 'Task' if isinstance(element_data[1], bool) else 'Section'
+        kwargs['name'] = element_data[0] if kwargs['type'] == 'Task' else element_data[0][0]
+        kwargs['state'] = element_data[1] if kwargs['type'] == 'Task' else element_data[0][1]
+        if kwargs['type'] == 'Section':
+            kwargs['section_data'] = element_data[1]
+
+        self.create_element(**kwargs)
 
 class Task(QCheckBox):
     '''
@@ -160,28 +193,6 @@ class Task(QCheckBox):
         print(indices)
         return indices
 
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
-        if e.button() == 1:
-            self.click()
-        if e.button() == 2:
-            self.taskRightClick.popup(e.globalPos())
-
-    def rename(self, action):
-        new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name')
-        if not ok or new_name == '':
-            return
-        self.setText(new_name)
-
-    @pyqtSlot(QAction)
-    def right_click_menu_clicked(self, action):
-        switch_case_dict = {
-            'Rename': self.rename
-        }
-        
-        if action.text() in switch_case_dict:
-            print(action.text(), action.parentWidget().title())
-            switch_case_dict[action.text()](action)
-
     def eventFilter(self, object, event):
         # print(object, event.type())
 
@@ -204,10 +215,42 @@ class Task(QCheckBox):
                 self.changed_state.emit(kwargs)
         return False
 
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+        if e.button() == 1:
+            self.click()
+        if e.button() == 2:
+            self.taskRightClick.popup(e.globalPos())
+
+    @pyqtSlot(QAction)
+    def right_click_menu_clicked(self, action):
+        switch_case_dict = {
+            'Rename': self.rename,
+            'Copy': self.copy
+        }
+        
+        if action.text() in switch_case_dict:
+            print(action.text(), action.parentWidget().title())
+            switch_case_dict[action.text()](action)
+
+
+    def rename(self, action):
+        new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name')
+        if not ok or new_name == '':
+            return
+        self.setText(new_name)
+
+    def copy(self, action):
+        self.root.copied_element = [self.text(), self.isChecked()]
+        print(self.root.copied_element)
+
+    
 
     class TaskRightClick(QMenu):
         def __init__(self, parent):
             super().__init__(parent)
+
+            self.copy_action = self.addAction('Copy')
+            self.addSeparator()
             
             self.insert_menu = self.addMenu('Insert')
 
@@ -232,11 +275,6 @@ class Task(QCheckBox):
 
             self.addAction('Rename')
             self.addAction('Delete')
-
-        class AddMenu(QMenu):
-            def __init__(self):
-                super().__init__()
-
                 
 
 class Section(QWidget):
@@ -301,6 +339,9 @@ class Section(QWidget):
         self.change_visibility.emit(kwargs)
 
     def create_element(self, **kwargs):
+        if 'imported' not in kwargs:
+            kwargs['imported'] = False
+
         if 'state' not in kwargs:
             print(kwargs['action'].parentWidget().parentWidget().parentWidget())
             ## preventing double creation
@@ -343,16 +384,15 @@ class Section(QWidget):
         eval(f'element.{element_type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
 
         # If element is created by the user, write to file
-        if 'state' not in kwargs:
+        if kwargs['imported'] == False:
             sending_data = {
                 'indices': element.get_index_location(),
                 'value': element_name,
-                'action': f'create_{element_type.lower()}'
+                'action': f'create_{element_type.lower()}' if 'action' not in kwargs else 'paste'
             }
             self.root.send_changed_data(sending_data)
 
         return element
-
 
     def rename(self, action):
         new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name')
@@ -373,6 +413,26 @@ class Section(QWidget):
         self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)
         parent_widget.deleteLater()
 
+    def get_section_data(self):
+        data = []
+        data.append([self.sectionHeader.sectionName.text(), self.sectionBody.isVisible()])
+        # print(self.sectionBody.children())
+        section_data = []
+        for element in self.sectionBody.children()[1:]:
+            if isinstance(element, Task):
+                section_data.append([element.text(), element.isChecked()])
+        data.append(section_data)
+        return(data)
+
+    def copy(self, action):
+        if isinstance(action.parentWidget().parentWidget(), Task):
+            return
+        self.root.copied_element = self.get_section_data()
+        print(self.get_section_data())
+
+    def paste(self, action):
+        pass
+
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
         # print(action.text(), 'hi')
@@ -381,7 +441,9 @@ class Section(QWidget):
             'Task': self.create_element,
             'Section': self.create_element,
             'Rename': self.rename,
-            'Delete': self.delete_child_element
+            'Delete': self.delete_child_element,
+            'Copy': self.copy,
+            'Paste': self.paste
         }
 
         if action.text() in switch_case_dict:
@@ -444,6 +506,11 @@ class Section(QWidget):
     class SectionRightClick(QMenu):
         def __init__(self, parent):
             super().__init__(parent)
+            
+            self.addAction('Copy')
+            self.addAction('Paste')
+
+            self.addSeparator()
 
             self.add_menu = self.addMenu('Add')
             

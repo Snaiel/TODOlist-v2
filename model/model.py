@@ -103,7 +103,7 @@ class Model:
             json_data = json.load(json_file)
             json_file.seek(0)
 
-            print(kwargs['action'])
+            # print(kwargs['action'])
 
             if 'create' in kwargs['action']: # value: the name of the element
                 element = [kwargs['value'], False] if 'task' in kwargs['action'] else [[kwargs['value'], False], []]
@@ -117,7 +117,7 @@ class Model:
                 current_element.insert(i, element)
 
             elif kwargs['action'] in ('toggle_task', 'toggle_section', 'delete_element'):
-                print(kwargs['action'], kwargs['indices'])
+                # print(kwargs['action'], kwargs['indices'])
                 if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:
                     json_data['data'].pop(kwargs['indices'][0])
 
@@ -126,7 +126,7 @@ class Model:
                     if isinstance(current_element[0], list):
                         current_element = current_element[1]
 
-                    print(kwargs['action'], current_element, kwargs['indices'], list(reversed(kwargs['indices'][:-1])), i)
+                    # print(kwargs['action'], current_element, kwargs['indices'], list(reversed(kwargs['indices'][:-1])), i)
                     if kwargs['action'] == 'delete_element' and i == len(kwargs['indices']) - 2:
                         current_element.pop(list(reversed(kwargs['indices'][:-1]))[i])
                         break

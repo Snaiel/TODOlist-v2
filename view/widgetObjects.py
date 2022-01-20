@@ -293,7 +293,7 @@ class Section(QWidget):
 
         self.sectionHeader = self.SectionHeader(section_name)
         self.sectionBody = self.SectionBody()
-        self.sectionBody.setVisible(open)
+        # self.sectionBody.setVisible(open)
 
         self.sectionRightClick = self.SectionRightClick(self)
 
@@ -307,6 +307,9 @@ class Section(QWidget):
         # self.sectionRightClick.installEventFilter(self)
         self.change_visibility.connect(root.send_changed_data)
         self.sectionHeader.installEventFilter(self)
+
+        if open != self.sectionBody.isVisible():
+            self._toggle_section(self.sectionHeader.toggleIcon, self.sectionBody, True)
 
     def get_index_location(self):
         indices = []
@@ -322,7 +325,7 @@ class Section(QWidget):
         print(indices)
         return indices
 
-    def _toggle_section(self, toggle_icon, section_body):
+    def _toggle_section(self, toggle_icon, section_body, imported=False):
         if section_body.isVisible():
             section_body.hide()
             toggle_icon.setText('▶')
@@ -331,12 +334,13 @@ class Section(QWidget):
             section_body.show()
             toggle_icon.setText('▼')
         
-        kwargs = {
-            'indices': self.get_index_location(),
-            'value': section_body.isVisible(),
-            'action': 'toggle_section'
-        }
-        self.change_visibility.emit(kwargs)
+        if not imported:
+            kwargs = {
+                'indices': self.get_index_location(),
+                'value': section_body.isVisible(),
+                'action': 'toggle_section'
+            }
+            self.change_visibility.emit(kwargs)
 
     def create_element(self, **kwargs):
         if 'imported' not in kwargs:

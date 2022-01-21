@@ -98,6 +98,7 @@ class Model:
                 - toggle_section
                 - create_task
                 - create_section
+                - rename_task
                 - delete_element
         '''
         if 'state' not in kwargs:
@@ -119,13 +120,11 @@ class Model:
                         current_element = current_element[i][1]
 
                 current_element.insert(i, element)
-
-            elif kwargs['action'] in ('toggle_task', 'toggle_section', 'delete_element'):
+            else:
                 # print(kwargs['action'], kwargs['indices'])
                 if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:
                     json_data['data'].pop(kwargs['indices'][0])
                 else:
-
                     current_element = json_data['data'][kwargs['indices'][-1]]
                     for i in range(len(kwargs['indices'])-1):
                         if isinstance(current_element[0], list):
@@ -142,6 +141,10 @@ class Model:
                         current_element[1] = kwargs['value']
                     elif kwargs['action'] == 'toggle_section':
                         current_element[0][1] = kwargs['value']
+                    elif kwargs['action'] == 'rename_task':
+                        current_element[0] = kwargs['value']
+                    elif kwargs['action'] == 'rename_section':
+                        current_element[0][0] = kwargs['value']
 
             
 

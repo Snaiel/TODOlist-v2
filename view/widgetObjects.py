@@ -237,6 +237,14 @@ class Task(QCheckBox):
         new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name')
         if not ok or new_name == '':
             return
+
+        sending_data = {
+            'indices': self.get_index_location(),
+            'value': new_name,
+            'action': 'rename_task'
+        }
+        
+        self.root.send_changed_data(sending_data)
         self.setText(new_name)
 
     def copy(self, action):
@@ -429,6 +437,14 @@ class Section(QWidget):
         new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name')
         if not ok or new_name == '':
             return
+
+        sending_data = {
+            'indices': self.get_index_location(),
+            'value': new_name,
+            'action': 'rename_section'
+        }
+        
+        self.root.send_changed_data(sending_data)
         self.sectionHeader.sectionName.setText(new_name)
 
     def delete(self, action):

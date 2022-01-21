@@ -554,7 +554,7 @@ class Section(QWidget):
             self.toggleIcon.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
             self.toggleIcon.setStyleSheet("color: white; padding-bottom: 5px")
             self.toggleIcon.setIndent(0)
-            self.sectionHeaderLayout.addWidget(self.toggleIcon, stretch=1)
+            self.sectionHeaderLayout.addWidget(self.toggleIcon)
 
             self.sectionName = QLabel(section_name)
             self.sectionName.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)

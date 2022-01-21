@@ -129,7 +129,7 @@ class List(QScrollArea):
 
     def delete_element(self, action):
         parent_widget = action.parentWidget().parentWidget()
-        print(parent_widget)
+        print(parent_widget.children())
 
         kwargs = {
             'indices': parent_widget.get_index_location(),
@@ -426,6 +426,9 @@ class Section(QWidget):
             'indices': parent_widget.get_index_location(),
             'action': 'delete_element'
         }
+        if len(kwargs['indices'] == 1):
+            return
+
         self.root.send_changed_data(kwargs)
 
         self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)

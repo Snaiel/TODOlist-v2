@@ -102,13 +102,14 @@ class List(QScrollArea):
             self.scrollAreaLayout.addWidget(element)
 
         ## Listen for when an action in the element's menu is triggered
-        eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
+        # eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
 
         # If element is created by the user, write to file
         if kwargs['imported'] == False:
             sending_data = {
                 'indices': element.get_index_location(),
                 'value': element_name,
+                'state': state,
                 'action': f'create_{type_of_element.lower()}'
             }
             self.root.send_changed_data(sending_data)
@@ -127,18 +128,16 @@ class List(QScrollArea):
 
         return element
 
-    def delete_element(self, action):
-        parent_widget = action.parentWidget().parentWidget()
-        print(parent_widget.children())
+    def delete_child(self, element):
 
         kwargs = {
-            'indices': parent_widget.get_index_location(),
+            'indices': element.get_index_location(),
             'action': 'delete_element'
         }
         self.root.send_changed_data(kwargs)
 
-        self.scrollAreaLayout.removeWidget(parent_widget)
-        parent_widget.deleteLater()
+        self.scrollAreaLayout.removeWidget(element)
+        element.deleteLater()
 
     def clear_list(self):
         layout = self.scrollAreaLayout
@@ -225,7 +224,8 @@ class Task(QCheckBox):
     def right_click_menu_clicked(self, action):
         switch_case_dict = {
             'Rename': self.rename,
-            'Copy': self.copy
+            'Copy': self.copy,
+            'Delete': self.delete
         }
         
         if action.text() in switch_case_dict:
@@ -242,6 +242,17 @@ class Task(QCheckBox):
     def copy(self, action):
         self.root.copied_element = [self.text(), self.isChecked()]
         print(self.root.copied_element)
+
+    def delete(self, action):
+        parent_widget = self.parentWidget()
+        print(self, parent_widget)
+        while True:
+            print(parent_widget)
+            if type(parent_widget) in (List, Section):
+                break
+            else:
+                parent_widget = parent_widget.parentWidget()
+        parent_widget.delete_child(self)
 
     
 
@@ -387,14 +398,16 @@ class Section(QWidget):
             self.sectionBody.sectionBodyLayout.addWidget(element)
 
         # Listen for when an action in the element's menu is triggered
-        eval(f'element.{element_type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
+        # eval(f'element.{element_type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
 
         # If element is created by the user, write to file
         if kwargs['imported'] == False:
+            print('hello')
             sending_data = {
                 'indices': element.get_index_location(),
                 'value': element_name,
-                'action': f'create_{element_type.lower()}' if 'action' not in kwargs else 'paste'
+                'state': state,
+                'action': f'create_{element_type.lower()}'
             }
             self.root.send_changed_data(sending_data)
 
@@ -418,21 +431,27 @@ class Section(QWidget):
             return
         self.sectionHeader.sectionName.setText(new_name)
 
-    def delete_child_element(self, action):
-        parent_widget = action.parentWidget().parentWidget()
-        print(parent_widget)
+    def delete(self, action):
+        parent_widget = self.parentWidget().parentWidget().parentWidget()
+        while True:
+            if type(parent_widget) in (List, Section):
+                break
+            else:
+                parent_widget = parent_widget.parentWidget()
+        parent_widget.delete_child(self)
+
+
+    def delete_child(self, element):
 
         kwargs = {
-            'indices': parent_widget.get_index_location(),
+            'indices': element.get_index_location(),
             'action': 'delete_element'
         }
-        if len(kwargs['indices'] == 1):
-            return
 
         self.root.send_changed_data(kwargs)
 
-        self.sectionBody.sectionBodyLayout.removeWidget(parent_widget)
-        parent_widget.deleteLater()
+        self.sectionBody.sectionBodyLayout.removeWidget(element)
+        element.deleteLater()
 
     def get_section_data(self, section=None):
         data = []
@@ -475,7 +494,7 @@ class Section(QWidget):
             'Task': self.create_element,
             'Section': self.create_element,
             'Rename': self.rename,
-            'Delete': self.delete_child_element,
+            'Delete': self.delete,
             'Copy': self.copy,
             'Paste': self.paste
         }
@@ -542,14 +561,13 @@ class Section(QWidget):
             super().__init__(parent)
             
             self.addAction('Copy')
-            self.addAction('Paste')
-
             self.addSeparator()
 
             self.add_menu = self.addMenu('Add')
             
             self.add_menu.addAction('Task')
             self.add_menu.addAction('Section')
+            self.add_menu.addAction('Paste')
 
             self.insert_menu = self.addMenu('Insert')
             self.insert_menu.addAction('Task')

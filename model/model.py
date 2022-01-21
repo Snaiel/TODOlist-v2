@@ -90,6 +90,7 @@ class Model:
             list_name: name of current focused list
             indices: the list of indices that locate the element being modified
             value: the information being written to the file
+            state: whether a task is checked or a section is opened
             action: the type of action that has ocurred
 
             ## action types:
@@ -99,6 +100,9 @@ class Model:
                 - create_section
                 - delete_element
         '''
+        if 'state' not in kwargs:
+            kwargs['state'] = False
+
         with open(join(self.script_directory, 'data', f"{kwargs['list_name']}.json"), 'r+') as json_file:
             json_data = json.load(json_file)
             json_file.seek(0)
@@ -106,7 +110,7 @@ class Model:
             # print(kwargs['action'])
 
             if 'create' in kwargs['action']: # value: the name of the element
-                element = [kwargs['value'], False] if 'task' in kwargs['action'] else [[kwargs['value'], False], []]
+                element = [kwargs['value'], kwargs['state']] if 'task' in kwargs['action'] else [[kwargs['value'], kwargs['state']], []]
                 current_element = json_data['data'] # the root list
                 for i in reversed(kwargs['indices']):
                     if i >= len(current_element) or isinstance(current_element[i][0], str):

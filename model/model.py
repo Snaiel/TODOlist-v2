@@ -120,7 +120,6 @@ class Model:
                 # print(kwargs['action'], kwargs['indices'])
                 if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:
                     json_data['data'].pop(kwargs['indices'][0])
-                    print('what???????')
                 else:
 
                     current_element = json_data['data'][kwargs['indices'][-1]]

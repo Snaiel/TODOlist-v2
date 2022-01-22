@@ -73,7 +73,7 @@ class Window(QMainWindow):
         self.menu_add.addAction('&List', lambda: self.create_list())
 
         self.menu_edit = self.menuBar().addMenu("&Edit")
-        self.menu_edit.addAction('Paste', lambda: self.focused_list.paste())
+        self.menu_edit.addAction('Paste', lambda: self.paste())
         list_menu = self.menu_edit.addMenu('List')
         list_menu.addAction("&Clear", lambda: self.clear_list())
         list_menu.addAction("&Rename", lambda: self.rename_list())
@@ -158,7 +158,10 @@ class Window(QMainWindow):
                 self.model.change_focus(the_list.list_name)
 
     def create_element(self, **kwargs):
-        self.focused_list.create_element(type=kwargs['type'])
+        if self.focused_list:
+            self.focused_list.create_element(type=kwargs['type'])
+        else:
+            return
 
     def get_list(self, list_name):
         '''
@@ -188,6 +191,9 @@ class Window(QMainWindow):
                 self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
 
     def move_list(self, **kwargs):
+        if 'the_list' not in kwargs and self.focused_list is None:
+            return
+
         direction = kwargs['action'].split()[1]
 
         row_layout = self.scrollAreaRowLayout
@@ -209,6 +215,9 @@ class Window(QMainWindow):
         '''
         deletes all the contents of the list given, defaults to the focused list
         '''
+        if 'the_list' not in kwargs and self.focused_list is None:
+            return
+
         dialog = QMessageBox(self)
         dialog.setWindowTitle("clear contents")
         dialog.setText(f"Do you want to clear the contents of the {'selected' if kwargs['the_list'] else 'focused'} list?")
@@ -228,6 +237,9 @@ class Window(QMainWindow):
         '''
         renames a list given, defaults to the focused list
         '''
+        if 'the_list' not in kwargs and self.focused_list is None:
+            return
+
         new_name, ok = QInputDialog.getText(self, 'rename list', 'enter new name')
         if not ok or new_name == '':
             return
@@ -247,6 +259,9 @@ class Window(QMainWindow):
         '''
         deletes the list given, defaults to the focused list
         '''
+        print(self.focused_list)
+        if 'the_list' not in kwargs and self.focused_list is None:
+            return
 
         dialog = QMessageBox(self)
         dialog.setWindowTitle("delete list")
@@ -271,8 +286,15 @@ class Window(QMainWindow):
             self.change_focus(0)
             self.preferencesDialog.update_list_widget(self.model.get_list_names(), None)
 
+            if self.scrollAreaRowLayout.count() == 0:
+                self.focused_list = None
+
+    def paste(self):
+        if self.focused_list:
+            self.focused_list.paste()
+
     def closeEvent(self, a0: QCloseEvent) -> None:
-        self.model.close_event(self.focused_list.list_name)
+        self.model.close_event(self.focused_list.list_name if self.focused_list else None)
         return super().closeEvent(a0)
 
                 

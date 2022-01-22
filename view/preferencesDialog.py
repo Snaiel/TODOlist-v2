@@ -33,6 +33,8 @@ class PreferencesDialog(QDialog):
         dialogLayout.addWidget(buttonColumn, 0, 1)
 
     def button_clicked(self, action):
+        if self.todolistsList.count() == 0:
+            return
         self.parent.preferences_dialog_clicked(the_list=self.todolistsList.currentItem().text(), action=action)
 
     def update_list_widget(self, new_list, selected_item):

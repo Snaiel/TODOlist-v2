@@ -447,6 +447,18 @@ class Section(QWidget):
         self.root.send_changed_data(sending_data)
         self.sectionHeader.sectionName.setText(new_name)
 
+    def clear_contents(self, action):
+        for widget in self.sectionBody.children()[1:]:
+            self.sectionLayout.removeWidget(widget)
+            widget.deleteLater()
+
+        sending_data = {
+            'indices': self.get_index_location(),
+            'action': 'clear_section'
+        }
+
+        self.root.send_changed_data(sending_data)
+
     def delete(self, action):
         parent_widget = self.parentWidget().parentWidget().parentWidget()
         while True:
@@ -455,7 +467,6 @@ class Section(QWidget):
             else:
                 parent_widget = parent_widget.parentWidget()
         parent_widget.delete_child(self)
-
 
     def delete_child(self, element):
 
@@ -510,6 +521,7 @@ class Section(QWidget):
             'Task': self.create_element,
             'Section': self.create_element,
             'Rename': self.rename,
+            'Clear': self.clear_contents,
             'Delete': self.delete,
             'Copy': self.copy,
             'Paste': self.paste
@@ -606,5 +618,6 @@ class Section(QWidget):
 
 
             self.addAction('Rename')
+            self.addAction('Clear')
             self.addAction('Delete')
 

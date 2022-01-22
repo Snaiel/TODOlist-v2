@@ -145,6 +145,8 @@ class Model:
                         current_element[0] = kwargs['value']
                     elif kwargs['action'] == 'rename_section':
                         current_element[0][0] = kwargs['value']
+                    elif kwargs['action'] == 'clear_section':
+                        current_element[1] = []
 
             
 

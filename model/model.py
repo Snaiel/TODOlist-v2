@@ -93,13 +93,16 @@ class Model:
             state: whether a task is checked or a section is opened
             action: the type of action that has ocurred
 
-            ## action types:
+            ### action types:
                 - toggle_task
                 - toggle_section
                 - create_task
                 - create_section
                 - rename_task
                 - delete_element
+                - clear_checked
+                - clear_ all_checked
+                - clear_all
         '''
         if 'state' not in kwargs:
             kwargs['state'] = False
@@ -125,7 +128,9 @@ class Model:
                 if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:
                     json_data['data'].pop(kwargs['indices'][0])
                 else:
-                    current_element = json_data['data'][kwargs['indices'][-1]]
+                    # current_element = json_data['data'][kwargs['indices'][-1]]
+                    current_element = json_data['data'] if len(kwargs['indices']) == 0 else json_data['data'][kwargs['indices'][-1]]
+
                     for i in range(len(kwargs['indices'])-1):
                         if isinstance(current_element[0], list):
                             current_element = current_element[1]
@@ -145,8 +150,14 @@ class Model:
                         current_element[0] = kwargs['value']
                     elif kwargs['action'] == 'rename_section':
                         current_element[0][0] = kwargs['value']
-                    elif kwargs['action'] == 'clear_section':
+                    elif kwargs['action'] == 'clear_all':
                         current_element[1] = []
+                    elif kwargs['action'] in ('clear_checked', 'clear_all_checked'):
+                        print('clear brotha', current_element)
+                        if len(kwargs['indices']) == 0:
+                            current_element = self.clear_checked(current_element, True if kwargs['action'] == 'clear_all_checked' else False)
+                        else:
+                            current_element[1] = self.clear_checked(current_element[1], True if kwargs['action'] == 'clear_all_checked' else False)
 
             
 
@@ -179,9 +190,39 @@ class Model:
                 data.insert(index_of_list + direction, data.pop(index_of_list))
                 break
 
-    def clear_list(self, focused_list):
-        with open(join(self.script_directory, 'data', f'{focused_list}.json'), 'w') as json_file:
-            json.dump({"data": []}, json_file, indent=4)
+    def clear(self, focused_list, indices=[], clear_type='All'):
+        '''
+            Deletes tasks based on the clear_type:
+            - Checked: delete tasks in the same area
+            - All Checked: delete all checked tasks in same section and sub sections
+            - All: delete every element within it
+        '''
+
+        if clear_type == 'Checked':
+            self.write_to_todolist_file(list_name=focused_list, indices=indices, action='clear_checked')
+        elif clear_type == 'All Checked':
+            self.write_to_todolist_file(list_name=focused_list, indices=indices, action='clear_all_checked')
+        elif clear_type == 'All':
+            if not indices:
+                with open(join(self.script_directory, 'data', f'{focused_list}.json'), 'w') as json_file:
+                    json.dump({"data": []}, json_file, indent=4)
+            else:
+                self.write_to_todolist_file(list_name=focused_list, indices=indices, action='clear_all')
+
+    def clear_checked(self, the_parent, clear_all_checked):
+        '''
+            loops through parent and deletes 'tasks' that are checked
+        '''
+        new_parent = the_parent
+        for element in new_parent:
+            print(element)
+            if isinstance(element[1], list) and clear_all_checked:
+                element[1] = self.clear_checked(element[1], clear_all_checked)
+            elif element[1] == True:
+                new_parent.pop(new_parent.index(element))
+
+        return new_parent
+
 
     def rename_list(self, old_name, new_name):
         '''

@@ -139,12 +139,26 @@ class List(QScrollArea):
         self.scrollAreaLayout.removeWidget(element)
         element.deleteLater()
 
-    def clear_list(self):
+    def clear_list(self, action):
         layout = self.scrollAreaLayout
-        while layout.count():
-            child = layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+        print(action)
+
+        print(self.theWidget.children())
+
+        for element in self.theWidget.children()[1:]:
+            if action == 'Checked':
+                if isinstance(element, Task) and element.isChecked():
+                    layout.removeWidget(element)
+                    element.deleteLater()
+            elif action == 'All Checked':
+                if isinstance(element, Task) and element.isChecked():
+                    layout.removeWidget(element)
+                    element.deleteLater()
+                elif isinstance(element, Section):
+                    element.clear_contents('All Checked')
+            elif action == 'All' and element:
+                layout.removeWidget(element)
+                element.deleteLater()
 
     def paste(self):
         element_data = self.root.copied_element
@@ -448,13 +462,32 @@ class Section(QWidget):
         self.sectionHeader.sectionName.setText(new_name)
 
     def clear_contents(self, action):
+        if isinstance(action, QAction):
+            action = action.text()
         for widget in self.sectionBody.children()[1:]:
-            self.sectionLayout.removeWidget(widget)
-            widget.deleteLater()
+            if action == 'Checked':
+                if isinstance(widget, Task) and widget.isChecked():
+                    self.sectionLayout.removeWidget(widget)
+                    widget.deleteLater()
+            elif action == 'All Checked':
+                if isinstance(widget, Task) and widget.isChecked():
+                    self.sectionLayout.removeWidget(widget)
+                    widget.deleteLater()
+                elif isinstance(widget, Section):
+                    widget.clear_contents('All Checked')
+            elif action == 'All':
+                self.sectionLayout.removeWidget(widget)
+                widget.deleteLater()
+
+        ACTION = {
+            'Checked': 'clear_checked',
+            'All Checked': 'clear_all_checked',
+            'All': 'clear_all'
+        }
 
         sending_data = {
             'indices': self.get_index_location(),
-            'action': 'clear_section'
+            'action': ACTION[action]
         }
 
         self.root.send_changed_data(sending_data)
@@ -521,7 +554,9 @@ class Section(QWidget):
             'Task': self.create_element,
             'Section': self.create_element,
             'Rename': self.rename,
-            'Clear': self.clear_contents,
+            'Checked': self.clear_contents,
+            'All Checked': self.clear_contents,
+            'All': self.clear_contents,
             'Delete': self.delete,
             'Copy': self.copy,
             'Paste': self.paste
@@ -618,6 +653,11 @@ class Section(QWidget):
 
 
             self.addAction('Rename')
-            self.addAction('Clear')
+
+            clear_menu = self.addMenu('Clear')
+            clear_menu.addAction("Checked")
+            clear_menu.addAction("All Checked")
+            clear_menu.addAction("All")
+            
             self.addAction('Delete')
 

@@ -65,6 +65,7 @@ class Window(QMainWindow):
 
     def _createMenu(self):
         self.menu_file = self.menuBar().addMenu("&Menu")
+        self.menu_file.addAction("&Preferences", lambda: self.show_preferences_dialog())
         self.menu_file.addAction('&Exit', self.close)
 
         self.menu_add = self.menuBar().addMenu("&Add")
@@ -75,10 +76,12 @@ class Window(QMainWindow):
         self.menu_edit = self.menuBar().addMenu("&Edit")
         self.menu_edit.addAction('Paste', lambda: self.paste())
         list_menu = self.menu_edit.addMenu('List')
-        list_menu.addAction("&Clear", lambda: self.clear_list())
         list_menu.addAction("&Rename", lambda: self.rename_list())
         list_menu.addAction("&Delete", lambda: self.delete_list())
-        self.menu_edit.addAction("&Preferences", lambda: self.show_preferences_dialog())
+        clear_menu = self.menu_edit.addMenu('Clear')
+        clear_menu.addAction("Checked", lambda: self.clear_list(action='Checked'))
+        clear_menu.addAction("All Checked", lambda: self.clear_list(action='All Checked'))
+        clear_menu.addAction("All", lambda: self.clear_list(action='All'))
 
     def _createComboBox(self):
         self.combo = QComboBox()
@@ -217,21 +220,29 @@ class Window(QMainWindow):
         '''
         if 'the_list' not in kwargs and self.focused_list is None:
             return
+        if 'action' not in kwargs:
+            kwargs['action'] == 'All'
+
+        messages = {
+            'Checked': "Do you want to clear the checked tasks in the base level of the list?",
+            'All Checked': "Do you want to clear the checked tasks within the entire list?",
+            'All': f"Do you want to clear the contents of the {'selected' if 'the_list' in kwargs else 'focused'} list?"
+        }
 
         dialog = QMessageBox(self)
-        dialog.setWindowTitle("clear contents")
-        dialog.setText(f"Do you want to clear the contents of the {'selected' if kwargs['the_list'] else 'focused'} list?")
+        dialog.setWindowTitle("clear content")
+        dialog.setText(messages[kwargs['action']])
         dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         dialog.setDefaultButton(QMessageBox.Yes)
         answer = dialog.exec()
         if answer == QMessageBox.Yes:
             if 'the_list' in kwargs:
                 self.get_list(kwargs['the_list']).clear_list()
-                self.model.clear_list(kwargs['the_list'])
+                self.model.clear(kwargs['the_list'], kwargs['action'])
                 self.preferencesDialog.update_list_widget(self.model.get_list_names(), kwargs['the_list'])
             else:
-                self.focused_list.clear_list()
-                self.model.clear_list(self.focused_list.list_name)
+                self.focused_list.clear_list(kwargs['action'])
+                self.model.clear(self.focused_list.list_name, clear_type=kwargs['action'])
 
     def rename_list(self, **kwargs):
         '''

@@ -11,9 +11,6 @@ class Model:
         '''
         self.data = []
         self.app_data = {}
-        # self.app_data = {
-        #     'focused': 'Game'
-        # }
 
         self.script_directory = dirname(realpath(argv[0]))
 
@@ -55,7 +52,7 @@ class Model:
                 json_data['name'] = file.split('.')[0]
                 self.data.append(json_data)
 
-        print(self.data)
+        # print(self.data)
 
     def order_data_correctly(self):
         data = self.data
@@ -116,13 +113,17 @@ class Model:
             if 'create' in kwargs['action']: # value: the name of the element
                 element = [kwargs['value'], kwargs['state']] if 'task' in kwargs['action'] else [[kwargs['value'], kwargs['state']], []]
                 current_element = json_data['data'] # the root list
-                for i in reversed(kwargs['indices']):
-                    if i >= len(current_element) or isinstance(current_element[i][0], str):
-                        continue
-                    else:
-                        current_element = current_element[i][1]
 
-                current_element.insert(i, element)
+                for i in range(len(kwargs['indices']) - 1, -1, -1):
+                    if i == 0:
+                        break
+                    else:
+                        if isinstance(current_element[kwargs['indices'][i]][0], str):
+                            continue
+                        else:
+                            current_element = current_element[kwargs['indices'][i]][1]
+
+                current_element.insert(kwargs['indices'][i], element)
             else:
                 # print(kwargs['action'], kwargs['indices'])
                 if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:

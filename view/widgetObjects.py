@@ -213,13 +213,12 @@ class Task(QCheckBox):
             # Prevent menu closing when selecting 'Before'/ 'After'
             if isinstance(object, QMenu) and event.type() == QMouseEvent.MouseButtonPress:
                 action = object.actionAt(event.pos())
-                if isinstance(action, QAction):
+                if action is not None and action.text() in ('Before', 'After'):
                     action.trigger()
-                return True
+                    return True
 
             # When the task is clicked
             if isinstance(object, Task) and event.type() == QMouseEvent.MouseButtonRelease and event.button() == Qt.LeftButton:
-                print(event)
                 kwargs = {
                     'indices': self.get_index_location(),
                     'value': not object.isChecked(),
@@ -236,7 +235,10 @@ class Task(QCheckBox):
 
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
+        # print(action.text())
         switch_case_dict = {
+            'Task': self.insert,
+            'Section': self.insert,
             'Rename': self.rename,
             'Copy': self.copy,
             'Delete': self.delete
@@ -246,6 +248,17 @@ class Task(QCheckBox):
             print(action.text(), action.parentWidget().title())
             switch_case_dict[action.text()](action)
 
+    def insert(self, action):
+        print(action.parentWidget().title())
+        parent_widget = self.parentWidget()
+        while True:
+            if type(parent_widget) in (List, Section):
+                break
+            else:
+                parent_widget = parent_widget.parentWidget()
+
+        print(parent_widget)
+        parent_widget.create_element(action=action)
 
     def rename(self, action):
         new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name')
@@ -341,7 +354,7 @@ class Section(QWidget):
         self.change_visibility.connect(root.send_changed_data)
         self.sectionHeader.installEventFilter(self)
 
-        print(section_name, open, self.sectionBody.isVisible())
+        # print(section_name, open, self.sectionBody.isVisible())
         if open != self.sectionBody.isVisible():
             self._toggle_section(self.sectionHeader.toggleIcon, self.sectionBody, True)
         self.sectionBody.setVisible(open)
@@ -381,13 +394,15 @@ class Section(QWidget):
         if 'imported' not in kwargs:
             kwargs['imported'] = False
 
+        
+
         if 'state' not in kwargs:
             print(kwargs['action'].parentWidget().parentWidget().parentWidget())
             ## preventing double creation
             if kwargs['action'].parentWidget().title() == 'Insert' and isinstance(kwargs['action'].parentWidget().parentWidget().parentWidget(), QScrollArea):
                 return
-            elif kwargs['action'].parentWidget().title() == 'Insert' and kwargs['action'].parentWidget().parentWidget().parentWidget() is self:
-                return
+            # elif kwargs['action'].parentWidget().title() == 'Insert' and kwargs['action'].parentWidget().parentWidget().parentWidget() is self:
+            #     return
             elif kwargs['action'].parentWidget().title() == 'Add' and kwargs['action'].parentWidget().parentWidget().parentWidget() is not self:
                 return
 
@@ -419,9 +434,6 @@ class Section(QWidget):
         else:
             self.sectionBody.sectionBodyLayout.addWidget(element)
 
-        # Listen for when an action in the element's menu is triggered
-        # eval(f'element.{element_type.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)')
-
         # If element is created by the user, write to file
         if kwargs['imported'] == False:
             print('hello')
@@ -446,6 +458,18 @@ class Section(QWidget):
                 element.create_element(**creation_data)
 
         return element
+
+    def insert(self, action):
+        print(action.parentWidget().title())
+        parent_widget = self.parentWidget() # type: List
+        while True:
+            if type(parent_widget) in (List, Section):
+                break
+            else:
+                parent_widget = parent_widget.parentWidget()
+
+        print(parent_widget)
+        parent_widget.create_element(action=action)
 
     def rename(self, action):
         new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name')
@@ -550,6 +574,10 @@ class Section(QWidget):
     def right_click_menu_clicked(self, action):
         # print(action.text(), 'hi')
 
+        if action.parentWidget() is not None and action.parentWidget().title() == 'Insert':
+            self.insert(action)
+            return
+
         switch_case_dict = {
             'Task': self.create_element,
             'Section': self.create_element,
@@ -577,15 +605,10 @@ class Section(QWidget):
                 self.sectionRightClick.popup(event.globalPos())
             return True
 
-        # if isinstance(object, self.SectionRightClick):
-        #     print(object.menuAction().text())
-
-        # Prevent menu from closing when changing 'Placement' option
-        if isinstance(object, QMenu):
-            if event.type() == QMouseEvent.MouseButtonPress:
-                action = object.actionAt(event.pos())
-                if isinstance(action, QAction):
-                    action.trigger()
+        if object == self.sectionRightClick.insert_menu and event.type() == QMouseEvent.MouseButtonRelease:
+            action = object.actionAt(event.pos())
+            if action is not None and action.text() in ('Before', 'After'):
+                action.trigger()
                 return True
 
         return False

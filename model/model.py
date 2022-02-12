@@ -214,13 +214,13 @@ class Model:
         '''
             loops through parent and deletes 'tasks' that are checked
         '''
-        new_parent = the_parent
-        for element in new_parent:
+        new_parent = []
+        for element in the_parent:
             print(element)
             if isinstance(element[1], list) and clear_all_checked:
                 element[1] = self.clear_checked(element[1], clear_all_checked)
-            elif element[1] == True:
-                new_parent.pop(new_parent.index(element))
+            elif element[1] == False:
+                new_parent.append(element)
 
         return new_parent
 

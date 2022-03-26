@@ -216,7 +216,11 @@ class Window(QMainWindow):
 
     def clear_list(self, **kwargs):
         '''
-        deletes all the contents of the list given, defaults to the focused list
+        deletes elements of the list given, depending on the action type, defaults to the focused list
+
+            - Checked
+            - All Checked
+            - All
         '''
         if 'the_list' not in kwargs and self.focused_list is None:
             return

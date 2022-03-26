@@ -152,15 +152,19 @@ class Model:
                     elif kwargs['action'] == 'rename_section':
                         current_element[0][0] = kwargs['value']
                     elif kwargs['action'] == 'clear_all':
+                        print('CLEARRRR')
                         current_element[1] = []
                     elif kwargs['action'] in ('clear_checked', 'clear_all_checked'):
-                        print('clear brotha', current_element)
+                        print('clear brotha', current_element, kwargs['indices'])
+                        new_element = self.clear_checked(current_element, True if kwargs['action'] == 'clear_all_checked' else False)
                         if len(kwargs['indices']) == 0:
-                            current_element = self.clear_checked(current_element, True if kwargs['action'] == 'clear_all_checked' else False)
+                            print('??')
+                            current_element.clear()
+                            current_element.extend(new_element)
+                            print(current_element)
                         else:
-                            current_element[1] = self.clear_checked(current_element[1], True if kwargs['action'] == 'clear_all_checked' else False)
-
-            
+                            current_element[1].clear()
+                            current_element[1].extend(new_element)
 
 
             json.dump(json_data, json_file, indent=4)
@@ -217,11 +221,13 @@ class Model:
         new_parent = []
         for element in the_parent:
             print(element)
-            if isinstance(element[1], list) and clear_all_checked:
-                element[1] = self.clear_checked(element[1], clear_all_checked)
+            if isinstance(element[1], list):
+                if clear_all_checked:
+                    element[1] = self.clear_checked(element[1], clear_all_checked)
+                new_parent.append(element)
             elif element[1] == False:
                 new_parent.append(element)
-
+        print(new_parent)
         return new_parent
 
 

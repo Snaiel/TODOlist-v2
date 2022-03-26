@@ -155,7 +155,7 @@ class List(QScrollArea):
                     layout.removeWidget(element)
                     element.deleteLater()
                 elif isinstance(element, Section):
-                    element.clear_contents('All Checked')
+                    element.clear_contents('All Checked', True)
             elif action == 'All' and element:
                 layout.removeWidget(element)
                 element.deleteLater()
@@ -485,7 +485,7 @@ class Section(QWidget):
         self.root.send_changed_data(sending_data)
         self.sectionHeader.sectionName.setText(new_name)
 
-    def clear_contents(self, action):
+    def clear_contents(self, action, triggered_from_parent=False):
         if isinstance(action, QAction):
             action = action.text()
         for widget in self.sectionBody.children()[1:]:
@@ -513,8 +513,9 @@ class Section(QWidget):
             'indices': self.get_index_location(),
             'action': ACTION[action]
         }
-
-        self.root.send_changed_data(sending_data)
+        
+        if not triggered_from_parent:
+            self.root.send_changed_data(sending_data)
 
     def delete(self, action):
         parent_widget = self.parentWidget().parentWidget().parentWidget()

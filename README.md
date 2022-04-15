@@ -1,7 +1,7 @@
 # TODOlist-v2
 A revamped version of TODOlist that uses PyQt5
 
-<img src="./TODOlist_screenshot.png" style="zoom:25%;" />
+<img src="./TODOlist_screenshot.png" height="400px" />
 
 # Installation
 

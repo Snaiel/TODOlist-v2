@@ -241,7 +241,7 @@ class Window(QMainWindow):
         answer = dialog.exec()
         if answer == QMessageBox.Yes:
             if 'the_list' in kwargs:
-                self.get_list(kwargs['the_list']).clear_list()
+                self.get_list(kwargs['the_list']).clear_list(kwargs['action'])
                 self.model.clear(kwargs['the_list'], kwargs['action'])
                 self.preferencesDialog.update_list_widget(self.model.get_list_names(), kwargs['the_list'])
             else:

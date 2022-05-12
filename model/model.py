@@ -158,7 +158,7 @@ class Model:
                         print('clear brotha', current_element, kwargs['indices'])
                         new_element = self.clear_checked(current_element, True if kwargs['action'] == 'clear_all_checked' else False)
                         if len(kwargs['indices']) == 0:
-                            print('??')
+                            print('clear the entire list')
                             current_element.clear()
                             current_element.extend(new_element)
                             print(current_element)
@@ -219,6 +219,7 @@ class Model:
             loops through parent and deletes 'tasks' that are checked
         '''
         new_parent = []
+        print(the_parent, "WOWWWW")
         for element in the_parent:
             print(element)
             if isinstance(element[1], list):
@@ -227,7 +228,7 @@ class Model:
                 new_parent.append(element)
             elif element[1] == False:
                 new_parent.append(element)
-        print(new_parent)
+        print(new_parent, "NEWWW")
         return new_parent
 
 

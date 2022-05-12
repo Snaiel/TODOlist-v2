@@ -498,7 +498,7 @@ class Section(QWidget):
                     self.sectionLayout.removeWidget(widget)
                     widget.deleteLater()
                 elif isinstance(widget, Section):
-                    widget.clear_contents('All Checked')
+                    widget.clear_contents('All Checked', True)
             elif action == 'All':
                 self.sectionLayout.removeWidget(widget)
                 widget.deleteLater()
@@ -509,12 +509,11 @@ class Section(QWidget):
             'All': 'clear_all'
         }
 
-        sending_data = {
+        if not triggered_from_parent:
+            sending_data = {
             'indices': self.get_index_location(),
             'action': ACTION[action]
-        }
-        
-        if not triggered_from_parent:
+            }
             self.root.send_changed_data(sending_data)
 
     def delete(self, action):

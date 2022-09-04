@@ -1,12 +1,17 @@
 # TODOlist-v2
 A revamped version of TODOlist that uses PyQt5
 
+<img src="./icon.png" height="80px" />
+
 <img src="./TODOlist_screenshot.png" height="400px" />
 
 # Installation
 
 * Clone the repository
-* Run TODOlist.py
+
+Whilst in the directory:
+* `pip install -r requirements.txt`
+* `python3 TODOlist.py`
 
 # Features
 
@@ -19,5 +24,5 @@ A revamped version of TODOlist that uses PyQt5
 * Inserting an element (task or element) before or after a right-clicked element
 * Clear
   * Checked tasks in the current level
-  * All checked tasks in the TODOlist
+  * All checked tasks in the list or section
   * All elements in the list or section

@@ -1,16 +1,18 @@
-from PyQt5.QtGui import QColor, QMouseEvent, QPalette, QCloseEvent
+from PyQt5.QtGui import QColor, QMouseEvent, QPalette, QCloseEvent, QIcon
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog, QAbstractButton
 import view.widgetObjects as widgetObjects
 from view.preferencesDialog import PreferencesDialog
 from model.model import Model
+from os.path import join, dirname, realpath
+from sys import argv
 
 class Window(QMainWindow):
     """Main Window."""
     def __init__(self, model):
         """Initializer."""
         super().__init__()
-
+        self.setWindowIcon(QIcon(join(dirname(realpath(argv[0])), "icon.png")))
         self.model = model # type: Model
 
         self._init_ui()

@@ -6,8 +6,7 @@ from view.view import Window
 class TODOlistApplication():
     def __init__(self) -> None:
         self.app = QApplication(sys.argv)
-        self.app.setStyle("Fusion")
-
+        # self.app.setStyle("Fusion")
 
         self.model = Model()
         self.view = Window(self.model)

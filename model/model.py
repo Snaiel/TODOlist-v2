@@ -22,8 +22,8 @@ class Model:
         self.write_to_app_data()
 
     def retrieve_app_data(self):
-        if isfile('app_data.json'):
-            with open('app_data.json', 'r') as json_file:
+        if isfile(join(self.script_directory, "app_data.json")):
+            with open(join(self.script_directory, "app_data.json"), 'r') as json_file:
                 json_data = json.load(json_file)
                 todolist_names = self.get_list_names()
 
@@ -79,7 +79,7 @@ class Model:
 
 
     def write_to_app_data(self):
-        with open('app_data.json', 'w') as json_file:
+        with open(join(self.script_directory, "app_data.json"), 'w') as json_file:
             json.dump(self.app_data, json_file, indent=4)
 
     def write_to_todolist_file(self, **kwargs):

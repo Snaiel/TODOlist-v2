@@ -37,17 +37,18 @@ class Section(QWidget):
             self._toggle_section(self.sectionHeader.toggleIcon, self.sectionBody, True)
         self.sectionBody.setVisible(open)
 
-    def _get_index_location(self):
+    def get_index_location(self):
         indices = []
-        widget = []
-        widget.append(self.parentWidget())
-        indices.append(widget[0].layout().indexOf(self))
-        print(widget, indices)
-        while not isinstance(widget[-1].parentWidget().parentWidget(), list.List):
-            widget.append(widget[-1].parentWidget())
-            widget.append(widget[-1].parentWidget())
-            indices.append(widget[-1].layout().indexOf(widget[-2]))
-            widget.pop(0)
+        widgets = []
+        widgets.append(self.parentWidget())
+        indices.append(widgets[0].layout().indexOf(self))
+        print(widgets, indices)
+        while not isinstance(widgets[-1].parentWidget().parentWidget(), list.List):
+            widgets.append(widgets[-1].parentWidget())
+            widgets.append(widgets[-1].parentWidget())
+            indices.append(widgets[-1].layout().indexOf(widgets[-2]))
+            widgets.pop(0)
+        indices.reverse()
         print(indices)
         return indices
 
@@ -62,13 +63,13 @@ class Section(QWidget):
         
         if not imported:
             kwargs = {
-                'indices': self._get_index_location(),
+                'indices': self.get_index_location(),
                 'value': section_body.isVisible(),
                 'action': 'toggle_section'
             }
             self.change_visibility.emit(kwargs)
 
-    def _create_element(self, **kwargs):
+    def create_element(self, **kwargs):
         if 'imported' not in kwargs:
             kwargs['imported'] = False
 
@@ -105,13 +106,13 @@ class Section(QWidget):
 
         if kwargs['imported'] == False:
             print('hello')
-            sending_data = {
-                'indices': element._get_index_location(),
+            model_data = {
+                'indices': element.get_index_location(),
                 'value': element_name,
                 'state': state,
                 'action': f'create_{element_type.lower()}'
             }
-            self.root.send_changed_data(sending_data)
+            self.root.send_changed_data(model_data)
 
         if 'section_data' in kwargs:
             for sub_element in kwargs['section_data']:
@@ -123,7 +124,7 @@ class Section(QWidget):
                 creation_data['pasted'] = True
                 if creation_data['type'] == 'Section':
                     creation_data['section_data'] = sub_element[1]
-                element._create_element(**creation_data)
+                element.create_element(**creation_data)
 
         return element
 
@@ -137,52 +138,52 @@ class Section(QWidget):
                 parent_widget = parent_widget.parentWidget()
 
         print(parent_widget)
-        parent_widget._create_element(action=action)
+        parent_widget.create_element(action=action)
 
     def rename(self, action):
         new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name', QLineEdit.EchoMode.Normal, self.sectionHeader.sectionName.text())
         if not ok or new_name == '':
             return
 
-        sending_data = {
-            'indices': self._get_index_location(),
+        model_data = {
+            'indices': self.get_index_location(),
             'value': new_name,
             'action': 'rename_section'
         }
         
-        self.root.send_changed_data(sending_data)
+        self.root.send_changed_data(model_data)
         self.sectionHeader.sectionName.setText(new_name)
 
     def clear_contents(self, action, triggered_from_parent=False):
+        print('hello')
         if isinstance(action, QAction):
-            action = action.text()
+            CLEAR_TYPES = {
+                'Checked': 'clear_checked',
+                'All Checked': 'clear_all_checked',
+                'All': 'clear_all'
+            }
+            action = CLEAR_TYPES[action.text()]
         for widget in self.sectionBody.children()[1:]:
-            if action == 'Checked':
+            if action == 'clear_checked':
                 if isinstance(widget, task.Task) and widget.isChecked():
                     self.sectionLayout.removeWidget(widget)
                     widget.deleteLater()
-            elif action == 'All Checked':
+            elif action == 'clear_all_checked':
                 if isinstance(widget, task.Task) and widget.isChecked():
                     self.sectionLayout.removeWidget(widget)
                     widget.deleteLater()
                 elif isinstance(widget, Section):
-                    widget.clear_contents('All Checked', True)
-            elif action == 'All':
+                    widget.clear_contents('clear_all_checked', True)
+            elif action == 'clear_all':
                 self.sectionLayout.removeWidget(widget)
                 widget.deleteLater()
 
-        ACTION = {
-            'Checked': 'clear_checked',
-            'All Checked': 'clear_all_checked',
-            'All': 'clear_all'
-        }
-
         if not triggered_from_parent:
-            sending_data = {
-            'indices': self._get_index_location(),
-            'action': ACTION[action]
+            model_data = {
+                'indices': self.get_index_location(),
+                'action': action
             }
-            self.root.send_changed_data(sending_data)
+            self.root.send_changed_data(model_data)
 
     def delete(self, action):
         parent_widget = self.parentWidget().parentWidget().parentWidget()
@@ -196,7 +197,7 @@ class Section(QWidget):
     def delete_child(self, element):
 
         kwargs = {
-            'indices': element._get_index_location(),
+            'indices': element.get_index_location(),
             'action': 'delete_element'
         }
 
@@ -235,7 +236,7 @@ class Section(QWidget):
         if kwargs['type'] == 'Section':
             kwargs['section_data'] = element_data[1]
 
-        self._create_element(**kwargs)
+        self.create_element(**kwargs)
 
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
@@ -244,8 +245,8 @@ class Section(QWidget):
             return
 
         switch_case_dict = {
-            'Task': self._create_element,
-            'Section': self._create_element,
+            'Task': self.create_element,
+            'Section': self.create_element,
             'Rename': self.rename,
             'Checked': self.clear_contents,
             'All Checked': self.clear_contents,

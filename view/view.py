@@ -3,7 +3,7 @@ from PyQt5.QtGui import QColor, QPalette, QCloseEvent, QIcon
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog
 from view.preferencesDialog import PreferencesDialog
-from view.widgets.list import List
+import view.widgets.list as list
 from model.model import Model
 from os.path import join, dirname, realpath
 from sys import argv
@@ -15,6 +15,8 @@ class Window(QMainWindow):
         super().__init__()
         self.setWindowIcon(QIcon(join(dirname(realpath(argv[0])), "icon.png")))
         self.model = model # type: Model
+
+        self.focused_list: list.List = None
 
         self._init_ui()
         self.import_data()
@@ -82,9 +84,9 @@ class Window(QMainWindow):
         list_menu.addAction("&Rename", lambda: self.rename_list())
         list_menu.addAction("&Delete", lambda: self.delete_list())
         clear_menu = self.menu_edit.addMenu('Clear')
-        clear_menu.addAction("Checked", lambda: self.clear_list(action='Checked'))
-        clear_menu.addAction("All Checked", lambda: self.clear_list(action='All Checked'))
-        clear_menu.addAction("All", lambda: self.clear_list(action='All'))
+        clear_menu.addAction("Checked", lambda: self.clear_list(action='clear_checked'))
+        clear_menu.addAction("All Checked", lambda: self.clear_list(action='clear_all_checked'))
+        clear_menu.addAction("All", lambda: self.clear_list(action='clear_all'))
 
     def _createComboBox(self):
         self.combo = QComboBox()
@@ -139,7 +141,7 @@ class Window(QMainWindow):
         self.combo.setCurrentText(focused)
 
     def add_list(self, todolist, focused):
-        self.scrollAreaRowLayout.addWidget(List(todolist['name'], True if todolist['name'] == focused else False, todolist['data'], self))
+        self.scrollAreaRowLayout.addWidget(list.List(todolist['name'], True if todolist['name'] == focused else False, todolist['data'], self))
 
     def set_focused_list(self, focused):
         '''
@@ -220,20 +222,21 @@ class Window(QMainWindow):
     def clear_list(self, **kwargs):
         '''
         deletes elements of the list given, depending on the action type, defaults to the focused list
-
-            - Checked
-            - All Checked
-            - All
+            - clear_checked
+            - clear_all_checked
+            - clear_all
         '''
+
         if 'the_list' not in kwargs and self.focused_list is None:
             return
+
         if 'action' not in kwargs:
-            kwargs['action'] == 'All'
+            kwargs['action'] == 'clear_all'
 
         messages = {
-            'Checked': "Do you want to clear the checked tasks in the base level of the list?",
-            'All Checked': "Do you want to clear the checked tasks within the entire list?",
-            'All': f"Do you want to clear the contents of the {'selected' if 'the_list' in kwargs else 'focused'} list?"
+            'clear_checked': "Do you want to clear the checked tasks in the base level of the list?",
+            'clear_all_checked': "Do you want to clear the checked tasks within the entire list?",
+            'clear_all': f"Do you want to clear the contents of the {'selected' if 'the_list' in kwargs else 'focused'} list?"
         }
 
         dialog = QMessageBox(self)
@@ -242,14 +245,21 @@ class Window(QMainWindow):
         dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         dialog.setDefaultButton(QMessageBox.Yes)
         answer = dialog.exec()
+
+        model_data = {
+            'action': kwargs['action']
+        }
+
         if answer == QMessageBox.Yes:
             if 'the_list' in kwargs:
                 self.get_list(kwargs['the_list']).clear_list(kwargs['action'])
-                self.model.clear(kwargs['the_list'], kwargs['action'])
+                model_data['list_name'] = kwargs['the_list']
                 self.preferencesDialog.update_list_widget(self.model.get_list_names(), kwargs['the_list'])
             else:
                 self.focused_list.clear_list(kwargs['action'])
-                self.model.clear(self.focused_list.list_name, clear_type=kwargs['action'])
+                model_data['list_name'] = self.focused_list.list_name
+
+            self.send_changed_data(model_data)
 
     def rename_list(self, **kwargs):
         '''

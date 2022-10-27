@@ -96,79 +96,21 @@ class Model:
                 - create_task
                 - create_section
                 - rename_task
-                - delete_element
                 - clear_checked
                 - clear_ all_checked
                 - clear_all
         '''
-        if 'state' not in kwargs:
-            kwargs['state'] = False
 
-        with open(join(self.script_directory, 'data', f"{kwargs['list_name']}.json"), 'r+') as json_file:
-            json_data = json.load(json_file)
-            json_file.seek(0)
-
-            # print(kwargs['action'])
-
-            if 'create' in kwargs['action']: # value: the name of the element
-                element = [kwargs['value'], kwargs['state']] if 'task' in kwargs['action'] else [[kwargs['value'], kwargs['state']], []]
-                current_element = json_data['data'] # the root list
-
-                for i in range(len(kwargs['indices']) - 1, -1, -1):
-                    if i == 0:
-                        break
-                    else:
-                        if isinstance(current_element[kwargs['indices'][i]][0], str):
-                            continue
-                        else:
-                            current_element = current_element[kwargs['indices'][i]][1]
-
-                current_element.insert(kwargs['indices'][i], element)
-            else:
-                # print(kwargs['action'], kwargs['indices'])
-                if kwargs['action'] == 'delete_element' and len(kwargs['indices']) == 1:
-                    json_data['data'].pop(kwargs['indices'][0])
-                else:
-                    # current_element = json_data['data'][kwargs['indices'][-1]]
-                    current_element = json_data['data'] if len(kwargs['indices']) == 0 else json_data['data'][kwargs['indices'][-1]]
-
-                    for i in range(len(kwargs['indices'])-1):
-                        if isinstance(current_element[0], list):
-                            current_element = current_element[1]
-
-                        # print(kwargs['action'], current_element, kwargs['indices'], list(reversed(kwargs['indices'][:-1])), i)
-                        if kwargs['action'] == 'delete_element' and i == len(kwargs['indices']) - 2:
-                            current_element.pop(list(reversed(kwargs['indices'][:-1]))[i])
-                            break
-
-                        current_element = current_element[list(reversed(kwargs['indices'][:-1]))[i]]
-
-                    if kwargs['action'] == 'toggle_task':
-                        current_element[1] = kwargs['value']
-                    elif kwargs['action'] == 'toggle_section':
-                        current_element[0][1] = kwargs['value']
-                    elif kwargs['action'] == 'rename_task':
-                        current_element[0] = kwargs['value']
-                    elif kwargs['action'] == 'rename_section':
-                        current_element[0][0] = kwargs['value']
-                    elif kwargs['action'] == 'clear_all':
-                        print('CLEARRRR')
-                        current_element[1] = []
-                    elif kwargs['action'] in ('clear_checked', 'clear_all_checked'):
-                        print('clear brotha', current_element, kwargs['indices'])
-                        new_element = self.clear_checked(current_element, True if kwargs['action'] == 'clear_all_checked' else False)
-                        if len(kwargs['indices']) == 0:
-                            print('clear the entire list')
-                            current_element.clear()
-                            current_element.extend(new_element)
-                            print(current_element)
-                        else:
-                            current_element[1].clear()
-                            current_element[1].extend(new_element)
-
-
-            json.dump(json_data, json_file, indent=4)
-            json_file.truncate()
+        if 'create' in kwargs['action']:
+            self.create_element(**kwargs)
+        elif 'toggle' in kwargs['action']:
+            self.toggle_element(**kwargs)
+        elif 'rename' in kwargs['action']:
+            self.rename_element(**kwargs)
+        elif 'clear' in kwargs['action']:
+            self.clear(**kwargs)
+        elif kwargs['action'] == 'delete_element':
+            self.delete_element(**kwargs)
 
     def change_focus(self, list_name):
         self.app_data['focused'] = list_name
@@ -195,31 +137,45 @@ class Model:
                 data.insert(index_of_list + direction, data.pop(index_of_list))
                 break
 
-    def clear(self, focused_list, indices=[], clear_type='All'):
+    def clear(self, list_name, indices=[], action='clear_all'):
         '''
-            Deletes tasks based on the clear_type:
-            - Checked: delete tasks in the same area
-            - All Checked: delete all checked tasks in same section and sub sections
-            - All: delete every element within it
+            Deletes tasks in the list or a section based on the action:
+            - clear_checked: delete tasks in the same area
+            - clear_all_checked: delete all checked tasks in same section and sub sections
+            - clear_all: delete every element within it
         '''
 
-        if clear_type == 'Checked':
-            self.write_to_todolist_file(list_name=focused_list, indices=indices, action='clear_checked')
-        elif clear_type == 'All Checked':
-            self.write_to_todolist_file(list_name=focused_list, indices=indices, action='clear_all_checked')
-        elif clear_type == 'All':
-            if not indices:
-                with open(join(self.script_directory, 'data', f'{focused_list}.json'), 'w') as json_file:
-                    json.dump({"data": []}, json_file, indent=4)
-            else:
-                self.write_to_todolist_file(list_name=focused_list, indices=indices, action='clear_all')
+        with open(join(self.script_directory, 'data', f"{list_name}.json"), 'r+') as json_file:
+            json_data = json.load(json_file)
+            json_file.seek(0)
 
-    def clear_checked(self, the_parent, clear_all_checked):
+            current_element = json_data['data'] if len(indices) == 0 else json_data['data'][indices[0]]
+
+            
+            for i in indices[1:]:
+                if isinstance(current_element[0], list):
+                    current_element = current_element[1]
+                current_element = current_element[i]
+
+            if action == 'clear_all':
+                current_element[1] = []
+            elif action in ('clear_checked', 'clear_all_checked'):
+                new_element = self.clear_checked(current_element[1], True if action == 'clear_all_checked' else False)
+                if len(indices) == 0:
+                    current_element.clear()
+                    current_element.extend(new_element)
+                else:
+                    current_element[1].clear()
+                    current_element[1].extend(new_element)
+
+            json.dump(json_data, json_file, indent=4)
+            json_file.truncate()
+
+    def clear_checked(self, the_parent: list, clear_all_checked: bool):
         '''
             loops through parent and deletes 'tasks' that are checked
         '''
         new_parent = []
-        print(the_parent, "WOWWWW")
         for element in the_parent:
             print(element)
             if isinstance(element[1], list):
@@ -228,9 +184,7 @@ class Model:
                 new_parent.append(element)
             elif element[1] == False:
                 new_parent.append(element)
-        print(new_parent, "NEWWW")
         return new_parent
-
 
     def rename_list(self, old_name, new_name):
         '''
@@ -255,6 +209,95 @@ class Model:
             if todolist['name'] == list_name:
                 self.data.remove(todolist)
         remove(join(self.script_directory, 'data', f'{list_name}.json'))
+
+    def create_element(self, action, list_name, indices, value, state = None):
+        with open(join(self.script_directory, 'data', f"{list_name}.json"), 'r+') as json_file:
+            json_data = json.load(json_file)
+            json_file.seek(0)
+
+            if state is None:
+                state = False
+
+            element = [value, state] if 'task' in action else [[value, state], []]
+            current_element = json_data['data'] # the root list
+
+            for i in indices[:-1]:
+                if i == 0:
+                    break
+                else:
+                    if isinstance(current_element[i][0], str):
+                        continue
+                    else:
+                        current_element = current_element[i][1]
+
+            current_element.insert(indices[-1], element)
+
+            json.dump(json_data, json_file, indent=4)
+            json_file.truncate()
+
+    def toggle_element(self, action, list_name, indices, value):
+        with open(join(self.script_directory, 'data', f"{list_name}.json"), 'r+') as json_file:
+            json_data = json.load(json_file)
+            json_file.seek(0)
+
+            current_element = json_data['data'] if len(indices) == 0 else json_data['data'][indices[0]]
+
+            for i in indices[1:]:
+                if isinstance(current_element[0], list):
+                    current_element = current_element[1]
+                current_element = current_element[i]
+
+            if 'task' in action:
+                current_element[1] = value
+            elif 'section' in action:
+                current_element[0][1] = value
+
+            json.dump(json_data, json_file, indent=4)
+            json_file.truncate()
+
+    def rename_element(self, action, list_name, indices, value):
+        with open(join(self.script_directory, 'data', f"{list_name}.json"), 'r+') as json_file:
+            json_data = json.load(json_file)
+            json_file.seek(0)
+
+            current_element = json_data['data'] if len(indices) == 0 else json_data['data'][indices[0]]
+
+            for i in indices[1:]:
+                if isinstance(current_element[0], list):
+                    current_element = current_element[1]
+                current_element = current_element[i]
+
+            if 'task' in action:
+                current_element[0] = value
+            elif 'section' in action:
+                current_element[0][0] = value
+
+            json.dump(json_data, json_file, indent=4)
+            json_file.truncate()
+
+    def delete_element(self, action, list_name, indices):
+        with open(join(self.script_directory, 'data', f"{list_name}.json"), 'r+') as json_file:
+            json_data = json.load(json_file)
+            json_file.seek(0)
+
+            if len(indices) == 1:
+                json_data['data'].pop(indices[0])
+            else:
+                current_element = json_data['data'] if len(indices) == 0 else json_data['data'][indices[0]]
+                indices.pop(0)
+
+                for i in range(len(indices)):
+                    if isinstance(current_element[0], list):
+                        current_element = current_element[1]
+
+                    if i == len(indices) - 1:
+                        current_element.pop(indices[i])
+                        break
+
+                    current_element = current_element[indices[i]]
+            
+            json.dump(json_data, json_file, indent=4)
+            json_file.truncate()
 
     def close_event(self, focused):
         self.app_data['focused'] = focused

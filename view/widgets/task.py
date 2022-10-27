@@ -1,8 +1,9 @@
 from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QInputDialog, QMenu, QCheckBox, QAction, QActionGroup, QLineEdit
+from PyQt5.QtWidgets import QInputDialog, QMenu, QCheckBox, QAction, QActionGroup, QLineEdit, QWidget
 import view.widgets.list as list
 import view.widgets.section as section
+import view.view as view
 
 class Task(QCheckBox):
     '''
@@ -13,6 +14,7 @@ class Task(QCheckBox):
 
     def __init__(self, task_name, root, checked=False):
         super().__init__(task_name)
+        root: view.Window
         self.root = root
 
         self.setChecked(checked)
@@ -20,20 +22,23 @@ class Task(QCheckBox):
         self.taskRightClick = self.TaskRightClick(self)
         self.taskRightClick.insert_menu.installEventFilter(self)
         self.taskRightClick.triggered.connect(self.right_click_menu_clicked)
+
         self.changed_state.connect(root.send_changed_data)
+
         self.installEventFilter(self)
 
     def get_index_location(self):
         indices = []
-        widget = []
-        widget.append(self.parentWidget())
-        indices.append(widget[0].layout().indexOf(self))
-        print(widget, indices)
-        while not isinstance(widget[-1].parentWidget().parentWidget(), list.List):
-            widget.append(widget[-1].parentWidget())
-            widget.append(widget[-1].parentWidget())
-            indices.append(widget[-1].layout().indexOf(widget[-2]))
-            widget.pop(0)
+        widgets = []
+        widgets.append(self.parentWidget())
+        indices.append(widgets[0].layout().indexOf(self))
+        print(widgets, indices)
+        while not isinstance(widgets[-1].parentWidget().parentWidget(), list.List):
+            widgets.append(widgets[-1].parentWidget())
+            widgets.append(widgets[-1].parentWidget())
+            indices.append(widgets[-1].layout().indexOf(widgets[-2]))
+            widgets.pop(0)
+        indices.reverse()
         print(indices)
         return indices
 
@@ -65,7 +70,7 @@ class Task(QCheckBox):
             self.taskRightClick.popup(e.globalPos())
 
     @pyqtSlot(QAction)
-    def right_click_menu_clicked(self, action):
+    def right_click_menu_clicked(self, action: QAction):
         # print(action.text())
         switch_case_dict = {
             'Task': self.insert,
@@ -96,13 +101,13 @@ class Task(QCheckBox):
         if not ok or new_name == '':
             return
 
-        sending_data = {
+        model_data = {
             'indices': self.get_index_location(),
             'value': new_name,
             'action': 'rename_task'
         }
         
-        self.root.send_changed_data(sending_data)
+        self.root.send_changed_data(model_data)
         self.setText(new_name)
 
     def copy(self, action):
@@ -119,8 +124,6 @@ class Task(QCheckBox):
             else:
                 parent_widget = parent_widget.parentWidget()
         parent_widget.delete_child(self)
-
-    
 
     class TaskRightClick(QMenu):
         def __init__(self, parent):

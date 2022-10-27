@@ -97,13 +97,13 @@ class List(QScrollArea):
 
         # If element is created by the user, write to file
         if kwargs['imported'] == False:
-            sending_data = {
+            model_data = {
                 'indices': element.get_index_location(),
                 'value': element_name,
                 'state': state,
                 'action': f'create_{type_of_element.lower()}'
             }
-            self.root.send_changed_data(sending_data)
+            self.root.send_changed_data(model_data)
 
         if 'section_data' in kwargs:
             for sub_element in kwargs['section_data']:
@@ -137,17 +137,17 @@ class List(QScrollArea):
         print(self.theWidget.children())
 
         for element in self.theWidget.children()[1:]:
-            if action == 'Checked':
+            if action == 'clear_checked':
                 if isinstance(element, task.Task) and element.isChecked():
                     layout.removeWidget(element)
                     element.deleteLater()
-            elif action == 'All Checked':
+            elif action == 'clear_all_checked':
                 if isinstance(element, task.Task) and element.isChecked():
                     layout.removeWidget(element)
                     element.deleteLater()
                 elif isinstance(element, section.Section):
-                    element.clear_contents('All Checked', True)
-            elif action == 'All' and element:
+                    element.clear_contents('clear_all_checked', True)
+            elif action == 'clear_all' and element:
                 layout.removeWidget(element)
                 element.deleteLater()
 

@@ -1,7 +1,7 @@
 from xml.etree.ElementTree import SubElement
 from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout, QInputDialog, QMenu, QCheckBox, QSizePolicy, QAction, QActionGroup, QLabel, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout, QInputDialog, QMenu, QCheckBox, QSizePolicy, QAction, QActionGroup, QLabel, QHBoxLayout, QLineEdit
 
 class List(QScrollArea):
     '''
@@ -261,7 +261,7 @@ class Task(QCheckBox):
         parent_widget.create_element(action=action)
 
     def rename(self, action):
-        new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name')
+        new_name, ok = QInputDialog.getText(self, 'rename task', 'enter new name', QLineEdit.EchoMode.Normal, self.text())
         if not ok or new_name == '':
             return
 
@@ -472,7 +472,7 @@ class Section(QWidget):
         parent_widget.create_element(action=action)
 
     def rename(self, action):
-        new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name')
+        new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name', QLineEdit.EchoMode.Normal, self.sectionHeader.sectionName.text())
         if not ok or new_name == '':
             return
 

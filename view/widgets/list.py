@@ -29,7 +29,6 @@ class List(QScrollArea):
         self.theWidget.setLayout(self.scrollAreaLayout)
 
         self.create_imported_data(data)
-        # print(self.isVisible())
 
     def create_section_from_data(self, data, parent=None):
         if parent is None:
@@ -39,7 +38,6 @@ class List(QScrollArea):
 
         for element in data[1]:
             if isinstance(element[0], str):
-                # print(element)
                 section.create_element(type='Task', name=element[0], state=element[1], imported=True)
             else:
                 self.create_section_from_data(element, section)
@@ -91,18 +89,11 @@ class List(QScrollArea):
         element = eval(f"{type_of_element.lower()}.{type_of_element}(element_name, self.root, state)")
         if 'action' in kwargs:
             action = kwargs['action']
-            # index = self.scrollAreaLayout.indexOf(action.parentWidget().parentWidget().parentWidget())
             index = self.scrollAreaLayout.indexOf(eval(f"action{'.parentWidget()'*3}"))
-
-            # print(action.parentWidget().parentWidget().add_menu.actions()[3].isChecked())
             insert_position = 0 if action.parentWidget().parentWidget().insert_menu.actions()[3].isChecked() is True else 1
-
             self.scrollAreaLayout.insertWidget(index + insert_position, element)
         else:
             self.scrollAreaLayout.addWidget(element)
-
-        ## Listen for when an action in the element's menu is triggered
-        # eval(f"element.{type_of_element.lower()}RightClick.triggered.connect(self.right_click_menu_clicked)")
 
         # If element is created by the user, write to file
         if kwargs['imported'] == False:

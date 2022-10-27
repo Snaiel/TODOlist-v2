@@ -20,7 +20,6 @@ class Section(QWidget):
 
         self.sectionHeader = self.SectionHeader(section_name)
         self.sectionBody = self.SectionBody()
-        # self.sectionBody.setVisible(open)
 
         self.sectionRightClick = self.SectionRightClick(self)
 
@@ -31,16 +30,14 @@ class Section(QWidget):
         self.sectionRightClick.insert_menu.installEventFilter(self)
         self.sectionRightClick.triggered.connect(self.right_click_menu_clicked)
 
-        # self.sectionRightClick.installEventFilter(self)
         self.change_visibility.connect(root.send_changed_data)
         self.sectionHeader.installEventFilter(self)
 
-        # print(section_name, open, self.sectionBody.isVisible())
         if open != self.sectionBody.isVisible():
             self._toggle_section(self.sectionHeader.toggleIcon, self.sectionBody, True)
         self.sectionBody.setVisible(open)
 
-    def get_index_location(self):
+    def _get_index_location(self):
         indices = []
         widget = []
         widget.append(self.parentWidget())
@@ -65,13 +62,13 @@ class Section(QWidget):
         
         if not imported:
             kwargs = {
-                'indices': self.get_index_location(),
+                'indices': self._get_index_location(),
                 'value': section_body.isVisible(),
                 'action': 'toggle_section'
             }
             self.change_visibility.emit(kwargs)
 
-    def create_element(self, **kwargs):
+    def _create_element(self, **kwargs):
         if 'imported' not in kwargs:
             kwargs['imported'] = False
 
@@ -109,7 +106,7 @@ class Section(QWidget):
         if kwargs['imported'] == False:
             print('hello')
             sending_data = {
-                'indices': element.get_index_location(),
+                'indices': element._get_index_location(),
                 'value': element_name,
                 'state': state,
                 'action': f'create_{element_type.lower()}'
@@ -126,7 +123,7 @@ class Section(QWidget):
                 creation_data['pasted'] = True
                 if creation_data['type'] == 'Section':
                     creation_data['section_data'] = sub_element[1]
-                element.create_element(**creation_data)
+                element._create_element(**creation_data)
 
         return element
 
@@ -140,7 +137,7 @@ class Section(QWidget):
                 parent_widget = parent_widget.parentWidget()
 
         print(parent_widget)
-        parent_widget.create_element(action=action)
+        parent_widget._create_element(action=action)
 
     def rename(self, action):
         new_name, ok = QInputDialog.getText(self, 'rename section', 'enter new name', QLineEdit.EchoMode.Normal, self.sectionHeader.sectionName.text())
@@ -148,7 +145,7 @@ class Section(QWidget):
             return
 
         sending_data = {
-            'indices': self.get_index_location(),
+            'indices': self._get_index_location(),
             'value': new_name,
             'action': 'rename_section'
         }
@@ -182,7 +179,7 @@ class Section(QWidget):
 
         if not triggered_from_parent:
             sending_data = {
-            'indices': self.get_index_location(),
+            'indices': self._get_index_location(),
             'action': ACTION[action]
             }
             self.root.send_changed_data(sending_data)
@@ -199,7 +196,7 @@ class Section(QWidget):
     def delete_child(self, element):
 
         kwargs = {
-            'indices': element.get_index_location(),
+            'indices': element._get_index_location(),
             'action': 'delete_element'
         }
 
@@ -208,26 +205,25 @@ class Section(QWidget):
         self.sectionBody.sectionBodyLayout.removeWidget(element)
         element.deleteLater()
 
-    def get_section_data(self, section=None):
+    def copy(self, action):
+        if isinstance(action.parentWidget().parentWidget(), task.Task):
+            return
+        self.root.copied_element = self._get_section_data()
+        print(self._get_section_data())
+
+    def _get_section_data(self, section=None):
         data = []
         if not section:
             section = self
         data.append([section.sectionHeader.sectionName.text(), section.sectionBody.isVisible()])
-        # print(self.sectionBody.children())
         section_data = []
         for element in section.sectionBody.children()[1:]:
             if isinstance(element, task.Task):
                 section_data.append([element.text(), element.isChecked()])
             else:
-                section_data.append(self.get_section_data(element))
+                section_data.append(self._get_section_data(element))
         data.append(section_data)
         return(data)
-
-    def copy(self, action):
-        if isinstance(action.parentWidget().parentWidget(), task.Task):
-            return
-        self.root.copied_element = self.get_section_data()
-        print(self.get_section_data())
 
     def paste(self, action):
         element_data = self.root.copied_element
@@ -239,19 +235,17 @@ class Section(QWidget):
         if kwargs['type'] == 'Section':
             kwargs['section_data'] = element_data[1]
 
-        self.create_element(**kwargs)
+        self._create_element(**kwargs)
 
     @pyqtSlot(QAction)
     def right_click_menu_clicked(self, action):
-        # print(action.text(), 'hi')
-
         if action.parentWidget() is not None and action.parentWidget().title() == 'Insert':
             self.insert(action)
             return
 
         switch_case_dict = {
-            'Task': self.create_element,
-            'Section': self.create_element,
+            'Task': self._create_element,
+            'Section': self._create_element,
             'Rename': self.rename,
             'Checked': self.clear_contents,
             'All Checked': self.clear_contents,
@@ -265,7 +259,6 @@ class Section(QWidget):
             switch_case_dict[action.text()](action=action)
 
     def eventFilter(self, object, event):
-        # print(object, event, event.type())
 
         ## Toggle visibility of section body when the header is clicked
         if isinstance(object, self.SectionHeader) and event.type() == QMouseEvent.MouseButtonRelease:
@@ -306,11 +299,8 @@ class Section(QWidget):
     class SectionBody(QWidget):
         def __init__(self):
             super().__init__()
-
             self.sectionBodyLayout = QVBoxLayout()
             self.sectionBodyLayout.setContentsMargins(20, 5, 20, 5)
-
-            # self.sectionBodyLayout.addWidget(QCheckBox('Quest'))
             self.setLayout(self.sectionBodyLayout)            
 
     class SectionRightClick(QMenu):

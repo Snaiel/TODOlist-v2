@@ -15,7 +15,6 @@ class Task(QCheckBox):
         super().__init__(task_name)
         self.root = root
 
-        # self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setChecked(checked)
 
         self.taskRightClick = self.TaskRightClick(self)

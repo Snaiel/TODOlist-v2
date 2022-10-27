@@ -1,8 +1,9 @@
-from PyQt5.QtGui import QColor, QMouseEvent, QPalette, QCloseEvent, QIcon
-from PyQt5.QtCore import QSize, Qt, pyqtSlot
-from PyQt5.QtWidgets import QDialog, QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog, QAbstractButton
-import view.widgetObjects as widgetObjects
+from typing import List
+from PyQt5.QtGui import QColor, QPalette, QCloseEvent, QIcon
+from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QComboBox, QInputDialog
 from view.preferencesDialog import PreferencesDialog
+from view.widgets.list import List
 from model.model import Model
 from os.path import join, dirname, realpath
 from sys import argv
@@ -138,7 +139,7 @@ class Window(QMainWindow):
         self.combo.setCurrentText(focused)
 
     def add_list(self, todolist, focused):
-        self.scrollAreaRowLayout.addWidget(widgetObjects.List(todolist['name'], True if todolist['name'] == focused else False, todolist['data'], self))
+        self.scrollAreaRowLayout.addWidget(List(todolist['name'], True if todolist['name'] == focused else False, todolist['data'], self))
 
     def set_focused_list(self, focused):
         '''

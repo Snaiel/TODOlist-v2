@@ -137,7 +137,7 @@ class Model:
                 data.insert(index_of_list + direction, data.pop(index_of_list))
                 break
 
-    def clear(self, list_name, indices=[], action='clear_all'):
+    def clear(self, list_name, indices=[], action='clear_all') -> None:
         '''
             Deletes tasks in the list or a section based on the action:
             - clear_checked: delete tasks in the same area
@@ -150,7 +150,6 @@ class Model:
             json_file.seek(0)
 
             current_element = json_data['data'] if len(indices) == 0 else json_data['data'][indices[0]]
-
             
             for i in indices[1:]:
                 if isinstance(current_element[0], list):
@@ -158,26 +157,30 @@ class Model:
                 current_element = current_element[i]
 
             if action == 'clear_all':
-                current_element[1] = []
+                current_element.clear()
             elif action in ('clear_checked', 'clear_all_checked'):
-                new_element = self.clear_checked(current_element[1], True if action == 'clear_all_checked' else False)
                 if len(indices) == 0:
+                    new_element = self.clear_checked(current_element, True if action == 'clear_all_checked' else False)
                     current_element.clear()
                     current_element.extend(new_element)
                 else:
+                    new_element = self.clear_checked(current_element[1], True if action == 'clear_all_checked' else False)
                     current_element[1].clear()
                     current_element[1].extend(new_element)
 
             json.dump(json_data, json_file, indent=4)
             json_file.truncate()
 
-    def clear_checked(self, the_parent: list, clear_all_checked: bool):
+    def clear_checked(self, the_parent: list, clear_all_checked: bool) -> list:
         '''
-            loops through parent and deletes 'tasks' that are checked
+            loops through parent and deletes 'tasks' that are checked.
+
+            the_parent is the list the contains the elements.
+
+            Either the entire data of a todolist or the data part of a section.
         '''
         new_parent = []
         for element in the_parent:
-            print(element)
             if isinstance(element[1], list):
                 if clear_all_checked:
                     element[1] = self.clear_checked(element[1], clear_all_checked)

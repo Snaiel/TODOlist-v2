@@ -2,6 +2,7 @@ import json
 from os import listdir, remove
 from os.path import isfile, join, realpath, dirname
 from sys import argv
+
 class Model:
     def __init__(self) -> None:
         '''
@@ -9,19 +10,31 @@ class Model:
 
         self.data is mainly for initialising the app, sending it to the view
         '''
-        self.data = []
-        self.app_data = {}
-
         self.script_directory = dirname(realpath(argv[0]))
 
-        self.retrieve_data()
-        self.app_data = self.retrieve_app_data()
+        self.data : list = self.retrieve_data()
+        self.app_data : dict = self.retrieve_app_data()
 
         self.data = self.order_data_correctly()
 
         self.write_to_app_data()
 
-    def retrieve_app_data(self):
+    def retrieve_data(self) -> list:
+        data = []
+
+        cur_path = self.script_directory
+        files = listdir(join(cur_path, 'data'))
+        files.remove('.gitignore')
+
+        for file in files:
+            with open(join(cur_path, 'data', file), 'r') as json_file:
+                json_data = json.load(json_file)
+                json_data['name'] = file.split('.')[0]
+                data.append(json_data)
+
+        return data
+
+    def retrieve_app_data(self) -> dict:
         if isfile(join(self.script_directory, "app_data.json")):
             with open(join(self.script_directory, "app_data.json"), 'r') as json_file:
                 json_data = json.load(json_file)
@@ -41,36 +54,27 @@ class Model:
                 'order': []
             }
 
-    def retrieve_data(self):
-        cur_path = self.script_directory
-        files = listdir(join(cur_path, 'data'))
-        files.remove('.gitignore')
+    def order_data_correctly(self) -> list:
+        old_data = self.data.copy()
+        new_data = []
 
-        for file in files:
-            with open(join(cur_path, 'data', file), 'r') as json_file:
-                json_data = json.load(json_file)
-                json_data['name'] = file.split('.')[0]
-                self.data.append(json_data)
+        if len(old_data) != 0:
+            todolists_names = [todolist['name'] for todolist in old_data]
+            for list_in_correct_order in self.app_data['order']:
+                index_of_todolist = todolists_names.index(list_in_correct_order)
+                new_data.append(old_data.pop(index_of_todolist))
+                todolists_names.pop(index_of_todolist)
+            new_data.extend(old_data)
 
-        # print(self.data)
+        return new_data
 
-    def order_data_correctly(self):
-        data = self.data
-        if len(data) != 0:
-            order = self.app_data['order']
-            for list_in_correct_position in order:
-                data.insert(order.index(list_in_correct_position), data.pop(data.index([i for i in data if i['name'] in order][0])))
-            return data
-        else:
-            return []
-
-    def get_list_names(self):
+    def get_list_names(self) -> list:
         if len(self.data) != 0:
             return [i['name'] for i in self.data]
         else:
             return []
 
-    def check_if_todolist_exists(self, list_name):
+    def check_if_todolist_exists(self, list_name) -> bool:
         files = listdir(join(self.script_directory, 'data'))
         if f'{list_name}.json' in files:
             return True

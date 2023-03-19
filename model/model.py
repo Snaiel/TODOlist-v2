@@ -229,13 +229,10 @@ class Model:
             current_element = json_data['data'] # the root list
 
             for i in indices[:-1]:
-                if i == 0:
-                    break
+                if isinstance(current_element[i][0], str):
+                    continue
                 else:
-                    if isinstance(current_element[i][0], str):
-                        continue
-                    else:
-                        current_element = current_element[i][1]
+                    current_element = current_element[i][1]
 
             current_element.insert(indices[-1], element)
 

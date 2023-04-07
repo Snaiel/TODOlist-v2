@@ -155,10 +155,13 @@ class Model:
 
             current_element = json_data['data'] if len(indices) == 0 else json_data['data'][indices[0]]
             
-            for i in indices[1:]:
-                if isinstance(current_element[0], list):
-                    current_element = current_element[1]
-                current_element = current_element[i]
+            if len(indices) == 0:
+                current_element = json_data['data']
+            else:
+                for i in indices:
+                    current_element = json_data['data'][i]
+                    if isinstance(current_element[0], list):
+                        current_element = current_element[1]
 
             if action == 'clear_all':
                 current_element.clear()
@@ -168,9 +171,9 @@ class Model:
                     current_element.clear()
                     current_element.extend(new_element)
                 else:
-                    new_element = self.clear_checked(current_element[1], True if action == 'clear_all_checked' else False)
-                    current_element[1].clear()
-                    current_element[1].extend(new_element)
+                    new_element = self.clear_checked(current_element, True if action == 'clear_all_checked' else False)
+                    current_element.clear()
+                    current_element.extend(new_element)
 
             json.dump(json_data, json_file, indent=4)
             json_file.truncate()

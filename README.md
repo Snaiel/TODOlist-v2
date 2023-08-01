@@ -8,7 +8,11 @@
   A revamped version of TODOlist that uses PyQt5
 </p>
 
-<img src="./screenshot.png" height="400px" />
+<p align="center">
+  <img src="./images/window_screenshot.png"/>
+</p>
+
+<img src="./images/desktop_screenshot.png"/>
 
 # Installation
 
